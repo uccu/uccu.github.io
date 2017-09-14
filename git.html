@@ -1,0 +1,63 @@
+<pre>
+尝试git的一些记录
+
+提前准备
+尝试用的服务器版本Ubuntu/CentOS
+如果执行不成功，加sudo试试?
+我是用gitosis管理的
+
+更新软件库索引（大概叫这个吧），索引库太旧的话有些东西就没有
+apt-get update
+安装必要的SSH，GIT
+apt-get install git-core openssh-server openssh-client
+下载gitosis，找个目录把源码扔进去
+我准备把它放到/home/src,嗯嗯。。
+
+mkdir /home/src
+cd /home/src
+git clone https://github.com/uccu/gitosis.git
+ls
+这时候应该能看到一个gitosis目录，进入该目录安装gitosis
+安装gitosis需要使用python-setuptools，于是我们先安装他,CentOS貌似并不能yum的
+
+cd /home/src/gitosis
+apt-get install python-setuptools
+python setup.py install
+或
+
+wget http://pypi.python.org/packages/source/s/setuptools/setuptools-0.6c11.tar.gz
+tar zxvf setuptools-0.6c11.tar.gz
+cd setuptools-0.6c11
+python setup.py build
+python setup.py install
+我们来新创建一个用户git，密码123456
+sudo useradd -m git
+sudo passwd git
+然后输入2次密码
+
+生成RSA密匙对上传公匙到服务器，初使化gitosis（/tmp/id_rsa.pub为公匙路径）
+
+sudo -H -u git gitosis-init < /tmp/id_rsa.pub
+保存密匙的那个客户端（admin），clone gitosis管理平台进行配置,如果有端口号则需要本地配置一下config文件
+git clone git@主机名:gitosis-admin.git
+clone下来后会发现有keydir文件夹和一个gitosis.conf配置文件，keydir内都是公匙，gitosis.conf可以配置权限，修改gitosis.conf文件，同步到服务器，也许需要重启一下ssh/sshd服务
+[gitosis]
+
+[group gitosis-admin]
+members = Administrator@cat
+writable = gitosis-admin
+
+[group po1]
+writable = po1 
+Members = Administrator@cat baka@cat(多用户用空格隔开，并且把对应的公匙放到keydir文件夹内)
+创建新项目po1，放些东西，不放也行，这样Administrator@cat baka@cat这2个用户就可以clone下来进行操作了
+git remote add origin git@主机名:po1.git
+...
+...
+git push origin master
+当同步仓库时候自动更新web服务器的代码,所在项目.git内的hooks/post-receive 内增加(如不存在则创建一个，并需要可执行权限)，
+#!/bin/sh
+cd /var/www/xxxxxxx/ 
+unset GIT_DIR
+git pull
+</pre>

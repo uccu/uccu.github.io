@@ -1,0 +1,86 @@
+<pre>
+centOS7 安装lamp，php版本5.4~7大概
+
+note一下，以防忘记了。。。下面是安装php70w其他的版本也类似。。。感觉蛮好用的orz
+
+
+1、删除之前的 php 版本：
+
+[root@iZ23d ~]# yum remove php* php-common
+Loaded plugins: langpacks
+Repository base is listed more than once in the configuration
+Repository updates is listed more than once in the configuration
+Repository extras is listed more than once in the configuration
+Repository centosplus is listed more than once in the configuration
+No Match for argument: php-5.4.16
+No Match for argument: php-5.4.16.tar.gz
+No Match for argument: php-7.0.1RC1
+No Match for argument: php-7.0.1RC1.tar.gz
+No Match for argument: phpMyAdmin-4.4.0.tar.gz
+No Match for argument: php-common
+No Packages marked for removal
+2、rpm 安装 Php7 相应的 yum源：
+
+[root@iZ23d ~]# rpm -Uvh https://mirror.webtatic.com/yum/el7/webtatic-release.rpm
+Retrieving https://mirror.webtatic.com/yum/el7/webtatic-release.rpm
+warning: /var/tmp/rpm-tmp.LhJKKR: Header V4 RSA/SHA1 Signature, key ID 62e74ca5: NOKEY
+Preparing... ################################# [100%]
+package webtatic-release-7-3.noarch is already installed
+3、 直接yum安装php7：
+
+[root@iZ23d ~]# yum install php70w
+Loaded plugins: langpacks
+Repository base is listed more than once in the configuration
+Repository updates is listed more than once in the configuration
+Repository extras is listed more than once in the configuration
+Repository centosplus is listed more than once in the configuration
+Resolving Dependencies
+--&gt; Running transaction check
+。。。 【省略】
+Warning: RPMDB altered outside of yum.
+Installing : php70w-common-7.0.0-1.w7.x86_64 1/3
+Installing : php70w-cli-7.0.0-1.w7.x86_64 2/3
+Installing : php70w-7.0.0-1.w7.x86_64 3/3
+Verifying : php70w-7.0.0-1.w7.x86_64 1/3
+Verifying : php70w-common-7.0.0-1.w7.x86_64 2/3
+Verifying : php70w-cli-7.0.0-1.w7.x86_64 3/3
+
+Installed:
+php70w.x86_64 0:7.0.0-1.w7
+
+Dependency Installed:
+php70w-cli.x86_64 0:7.0.0-1.w7 php70w-common.x86_64 0:7.0.0-1.w7
+
+Complete!
+4、检查 php 版本：
+
+[root@iZ23d ~]# php -v
+PHP 7.0.0 (cli) (built: Dec 2 2015 20:42:32) ( NTS )
+Copyright (c) 1997-2015 The PHP Group
+Zend Engine v3.0.0, Copyright (c) 1998-2015 Zend Technologies
+[root@iZ23d2e6hoqZ ~]#
+以上显示安装成功！
+
+5、重启 Apache，查看 phpinfo :
+
+[root@iZ23d ~]# systemctl restart httpd.service
+6 .yum install php70w-mbstring php70w-mysql
+
+CentOS 7的yum源中貌似没有正常安装mysql时的mysql-sever文件，需要去官网上下载
+
+ps.用mariadb也不错的
+
+# wget http://dev.mysql.com/get/mysql-community-release-el7-5.noarch.rpm
+# rpm -ivh mysql-community-release-el7-5.noarch.rpm
+# yum install mysql-community-server
+成功安装之后重启mysql服务
+
+# service mysqld restart
+初次安装mysql是root账户是没有密码的
+设置密码的方法
+
+# mysql -uroot
+mysql&gt; set password for ‘root’@‘localhost’ = password('mypasswd');
+mysql&gt; exit
+搞定！
+</pre>

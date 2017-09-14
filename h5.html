@@ -1,0 +1,76 @@
+<pre>
+在写H5时候一些遇到问题的记录
+
+…
+
+
+1.鼠标移动到图片图片放大的效果，以及会有卡顿现象的解决
+
+使用css3的transition过渡效果，background-size必须设置值…如100% 100% hover后120% 120%
+
+卡顿的现象是因为过渡的效果，使用Linear线性变化就会好很多了
+
+transition: all 0.2s Linear;
+2.cubic-bezier 指定过渡的贝塞尔曲线
+
+3.3D变换的一些东西
+
+transform-origin: 50% 50%;
+perspective: 1000;
+transform-origin设置基点（眼睛看的那个点）
+perspective设置透视距离（摄像机/眼睛离注视点的距离）
+通常是用很多浏览器没法用perspective就用transform: perspective(1000px)
+
+设置了这2个东西后旋转才有3D的效果
+
+4.父元素和子元素都是用了3D变换，效果不对的问题
+
+因为transform-style默认为flat（扁平）
+transform-style指定某元素的子元素是（看起来）位于三维空间内，还是在该元素所在的平面内被扁平化。
+
+transform-style设置为preserve-3d就行了
+
+5.清除浮动
+
+xxx::after{
+    clear: both;
+    dispaly:block;
+}
+float这东西…诶…
+
+5.把file对象转成url
+
+URL.createObjectURL
+
+6.搜索GET参数
+
+URLSearchParams
+
+var searchParams = new URLSearchParams('xxxxxxx');
+
+______
+
+
+
+var p = new URL(location);
+
+
+
+p.searchParams.get('xxx');
+p.searchParams.append('xxx','xxx');
+p.searchParams.delete('xxx','xxx');
+p.searchParams.set('xxx','xxx');
+p.searchParams.getAll('xxx');
+p.searchParams.toString();
+
+
+
+var a = document.createElement('a');
+a.href = 'xxxxx';
+a.searchParams.get('xxxx') 
+
+7.如果需要对动画使用回调函数，CSS 3也定义了相应的事件。
+
+el.addEventListener("webkitTransitionEnd", transitionEnded);
+el.addEventListener("transitionend", transitionEnded);
+</pre>

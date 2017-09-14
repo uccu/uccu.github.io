@@ -1,0 +1,144 @@
+<pre>
+编译php遇到的问题
+
+环境：debain8x64
+已配置nginx：apt-get install nginx
+
+
+下载php-7.1.2.tar.bz2
+用sha256sum php-7.1.2.tar.bz2校验sha256值
+
+解压
+
+tar -jxf php-7.1.2.tar.bz2
+进入文件夹
+
+cd php-7.1.2
+开始配置（这里只添加fpm，配置文件夹位置需要在这里添加barabara）
+
+./configure --enable-fpm
+编译安装
+
+make && make install
+安装好之后，在对应的地方创建php.ini
+
+cp php.ini-development /usr/local/php/php.ini
+
+在这里需要确认一下你的Configuration File (php.ini) Path的位置，并做相应的调整，可以通过php –ini查看
+因为我的位置是/usr/local/lib/php.ini并不是/usr/local/php/php.ini
+
+php-fpm.conf复制到指定位置
+
+cp /usr/local/etc/php-fpm.conf.default /usr/local/etc/php-fpm.conf
+这边在这一步有莫名的错误
+这文件最后一行是有个include文件，指向的位置不对，大概是应该是这样/usr/local/etc/php-fpm.d/*.conf
+find搜索一下php-fpm.d找到相应位置就行了
+
+find / -name pph-fpm.d
+于是还没有完，这个文件夹里只有一个 www.conf.default，文件名需要改成www.conf，或者cp
+
+php-fpm复制到指定位置
+
+cp sapi/fpm/php-fpm /usr/local/bin
+修改php.ini文件（官网上有这一项，唔…不管怎么样加上应该不会有错）
+
+将 php.ini 文件中的配置项 cgi.fix_pathinfo 设置为 0 。
+
+修改php-fpm配置用户和用户组（也是官网的，改吧…），搜一下group会马上找到了
+
+user = www-data
+group = www-data
+启动php-fpm服务
+
+/usr/local/bin/php-fpm
+配置nginx的nginx.conf
+
+location / {
+    root   html;
+    index  index.php index.html index.htm;
+}
+location ~* \.php$ {
+    fastcgi_index   index.php;
+    fastcgi_pass    127.0.0.1:9000;
+    include         fastcgi_params;
+    fastcgi_param   SCRIPT_FILENAME    $document_root$fastcgi_script_name;
+    fastcgi_param   SCRIPT_NAME        $fastcgi_script_name;
+}
+重启nginx
+
+service nginx restart
+编译扩展
+
+搜索一下phpize，有这么个东西他可以生成扩展的configure文件
+
+进入扩展的文件夹里，运行phpize就行了
+
+其中会出现一些问题,一般是缺少依赖，安装了就好了
+
+拿openssl为例子
+
+cd /home/cat/php-7.1.2/ext
+/usr/local/bin/phpize
+./configure --with-openssl
+make && make install
+修改php.ini添加扩展
+
+把extension_dir修改为扩展目录（一般不用修改）
+
+再添加一行extension=openssl.so
+
+重启php-fpm
+
+killall php-fpm
+/usr/local/bin/php-fpm
+
+(很暴力，恩..)
+
+编译扩展会遇到的问题（部分）
+
+解决没有bz2-dev的问题
+
+http://www.bzip.org/downloads.html
+http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz
+下载后解压，直接make && make install
+
+bz2编译时(64位问题)
+/usr/local/lib/libbz2.a: error adding symbols: Bad value
+删除/usr/local/lib/libz.a
+进入bzip2-1.0.x文件夹
+make clean
+修改Makefile文件
+CC=gcc改成CC=gcc -fPIC保存
+make
+make install
+
+解决没有libcurl的问题
+
+apt-get install libcurl4-gnutls-dev
+
+解决png.h not found
+
+apt-get install libpng-dev
+
+解决xml2-config not found
+
+apt-get install xml2-dev
+
+解决Cannot find OpenSSL’s <evp.h>`
+
+apt-get install libssl-dev libsslcommon2-dev 
+一般来说可以了
+
+libsslcommon2-dev没有的情况：
+
+find / -name libssl.so
+输出结果为： /usr/lib/x86_64-linux-gnu/libssl.so
+初步判断它可能只会在 /usr/lib/ 下寻找 libssl.so 文件
+
+ln -s /usr/lib/x86_64-linux-gnu/libssl.so  /usr/lib
+解决error: mcrypt.h not found
+
+apt-get install libmcrypt-dev
+
+这么下来好像没出什么问题了，待补充…
+</pre>

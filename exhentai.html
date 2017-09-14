@@ -1,0 +1,22 @@
+<pre>
+免去登陆时候无法获取谷歌验证码，登陆失败的问题，但需要提前至少登陆成功一次。
+
+
+ 
+
+获取id和hash的书签：
+
+javascript:(function(){var x,arr,arr2,reg=new RegExp('(^| )'+'ipb_member_id'+'=([^;]*)(;|$)'),reg2=new RegExp('(^| )'+'ipb_pass_hash'+'=([^;]*)(;|$)');arr=document.cookie.match(reg);arr2=document.cookie.match(reg2);x='ipb_member_id:'+unescape(arr[2])+'<br />ipb_pass_hash:'+unescape(arr2[2]);document.body.innerHTML=x})()
+复制以上内容，添加到新书签，登陆e-h后在当前页（e-h）点击书签即可获取
+
+ex书签模板：
+
+javascript:(function(){var c='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',d=document.domain;document.cookie='ipb_member_id='+c.substr(32)+';path=/;domain=.'+d;document.cookie='ipb_pass_hash='+c.substr(0,32)+';path=/;domain=.'+d;document.cookie='yay=0;path=/;domain=.'+d;window.location.reload();})();
+把hash+id按顺序连接起来替换掉xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx的位置。
+
+复制修改后的内容，添加到新书签，ex书签制作完成。
+
+使用方法：
+
+进入ex，看到熊猫，摸一摸，点击书签
+</pre>
