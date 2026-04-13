@@ -193,13 +193,57 @@
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+
+  /* 左侧面板收起/展开 */
+  .panel-toggle {
+    position: absolute; right: -28px; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 56px; background: #1e293b; border: 1px solid #334155;
+    border-left: none; border-radius: 0 8px 8px 0; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #94a3b8; font-size: 14px; z-index: 10; transition: all 0.15s;
+  }
+  .panel-toggle:hover { background: #293548; color: #e2e8f0; }
+  .panel-left.collapsed { width: 0; min-width: 0; overflow: hidden; border-right: none; }
+  .panel-left.collapsed .panel-toggle { right: 0; position: fixed; top: 50%; }
+
+  /* 手机端打开按钮 */
+  .mobile-open-btn { display: none; }
+
+  /* 遮罩层 */
+  .panel-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 40;
+  }
+  .panel-overlay.show { display: block; }
+
+  /* 手机端适配 */
+  @media (max-width: 768px) {
+    .app { flex-direction: column; }
+    .panel-left {
+      position: fixed; left: 0; top: 0; z-index: 50;
+      width: 85vw; min-width: 0; max-width: 380px;
+      transform: translateX(-100%); transition: transform 0.3s ease;
+      height: 100vh;
+    }
+    .panel-left.mobile-open { transform: translateX(0); }
+    .panel-left .panel-toggle { display: none; }
+    .mobile-open-btn { display: inline-flex; }
+    .panel-right { height: auto; min-height: 100vh; }
+    .result-header { padding: 12px 16px; }
+    .result-list { padding: 12px 16px; }
+    .filter-section { padding: 8px 12px; }
+    .step-card { padding: 12px 14px; }
+    .step-detail { grid-template-columns: 1fr; }
+    .weapon-chip { font-size: 11px; padding: 3px 8px; }
+  }
 </style>
 </head>
 <body>
 
 <div class="app">
   <!-- 左侧：武器选择 -->
-  <div class="panel-left">
+  <div class="panel-left" id="panelLeft">
+    <div class="panel-toggle" onclick="togglePanel()" title="收起面板">◀</div>
     <div class="panel-header">
       <h1>基质刷取路径</h1>
       <p>左侧勾选目标武器 → 右侧查看最优刷取顺序</p>
@@ -268,6 +312,7 @@
       <h2>最优刷取顺序</h2>
       <div class="header-actions">
         <div class="result-stats" id="resultStats"></div>
+        <button class="btn-icon mobile-open-btn" onclick="openMobilePanel()" title="选择武器">☰ 武器</button>
         <button class="btn-icon" onclick="openSettings()" title="淤积点优先级设置">⚙ 设置</button>
       </div>
     </div>
@@ -280,6 +325,7 @@
   </div>
 </div>
 <div class="bug-report">BUG反馈群：232130637</div>
+<div class="panel-overlay" id="panelOverlay" onclick="closeMobilePanel()"></div>
 
 <!-- 设置弹窗 -->
 <div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)closeSettings()">
@@ -897,6 +943,32 @@ function renderMissionSelect() {
     selMission.appendChild(o);
   });
   selMission.value = curVal;
+}
+
+// ==================== 面板收起/展开 ====================
+let panelCollapsed = false;
+
+function togglePanel() {
+  panelCollapsed = !panelCollapsed;
+  const panel = document.getElementById('panelLeft');
+  const toggle = panel.querySelector('.panel-toggle');
+  if (panelCollapsed) {
+    panel.classList.add('collapsed');
+    toggle.textContent = '▶';
+  } else {
+    panel.classList.remove('collapsed');
+    toggle.textContent = '◀';
+  }
+}
+
+function openMobilePanel() {
+  document.getElementById('panelLeft').classList.add('mobile-open');
+  document.getElementById('panelOverlay').classList.add('show');
+}
+
+function closeMobilePanel() {
+  document.getElementById('panelLeft').classList.remove('mobile-open');
+  document.getElementById('panelOverlay').classList.remove('show');
 }
 
 // ==================== 跨标签页同步 ====================
