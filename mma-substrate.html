@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231e293b'/><path d='M18 4L8 16l2 2L22 8z' fill='%233b82f6'/><path d='M7 17l-3 5 5-3 9 9 2-2-9-9z' fill='%2393c5fd'/><circle cx='24' cy='8' r='3' fill='%23f59e0b'/></svg>"/>
+<title>基质刷取最优路径计算器</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+  .app { display: flex; min-height: 100vh; position: relative; }
+  .bug-report {
+    position: fixed; right: 16px; bottom: 12px;
+    font-size: 11px; color: #64748b; z-index: 50;
+  }
+
+  /* 左侧面板 */
+  .panel-left {
+    width: 380px; min-width: 380px;
+    background: #1e293b; border-right: 1px solid #334155;
+    display: flex; flex-direction: column;
+    overflow: hidden; height: 100vh;
+  }
+  .panel-header { padding: 16px 20px; background: #162032; border-bottom: 1px solid #334155; }
+  .panel-header h1 { font-size: 18px; font-weight: 600; color: #f1f5f9; }
+  .panel-header p { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+  .weapon-list { flex: 1; overflow-y: auto; }
+  /* 简洁模式 */
+  .compact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; }
+  .compact-item {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 6px; border-radius: 6px; cursor: pointer;
+    transition: background 0.15s; font-size: 12px; white-space: nowrap; overflow: hidden;
+  }
+  .compact-item:hover { background: #293548; }
+  .compact-item.selected { background: #1d4ed844; border: 1px solid #3b82f688; }
+  .compact-item .compact-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+  .compact-item .compact-tags { display: flex; gap: 2px; margin-left: auto; flex-shrink: 0; }
+  .compact-item .tag-btn { font-size: 9px; padding: 0 4px; line-height: 16px; }
+  /* 筛选区 */
+  .filter-section {
+    padding: 10px 20px; border-bottom: 1px solid #334155;
+    display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 6px 12px;
+    align-items: center;
+  }
+  .filter-section label { font-size: 12px; color: #94a3b8; white-space: nowrap; }
+  .filter-hint { font-size: 10px; color: #64748b; margin-left: auto; }
+  .filter-section select {
+    background: #0f172a; color: #e2e8f0; border: 1px solid #475569;
+    border-radius: 6px; padding: 5px 8px; font-size: 12px; outline: none; cursor: pointer;
+  }
+  .filter-section select:focus { border-color: #3b82f6; }
+
+  /* 主属性多选 */
+  .multi-main { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; min-height: 26px; }
+  .multi-main label {
+    padding: 2px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;
+    background: #334155; color: #94a3b8; transition: all 0.15s; white-space: nowrap;
+    user-select: none;
+  }
+  .multi-main label.active { background: #3b82f6; color: white; }
+  .multi-main label.disabled { opacity: 0.35; cursor: not-allowed; }
+  .multi-main input[type="checkbox"] { display: none; }
+
+  /* 状态筛选 */
+  .status-filters { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .status-group { display: flex; gap: 3px; align-items: center; }
+  .status-group::before { content: attr(data-label); font-size: 11px; color: #64748b; margin-right: 2px; }
+  .status-tag {
+    padding: 2px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;
+    background: #334155; color: #94a3b8; transition: all 0.15s; white-space: nowrap;
+    user-select: none;
+  }
+  .status-tag.active { background: #3b82f6; color: white; }
+
+  .action-bar { padding: 8px 20px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+  .btn {
+    padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+    cursor: pointer; border: none; transition: all 0.15s;
+  }
+  .btn-primary { background: #3b82f6; color: white; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-secondary { background: #334155; color: #cbd5e1; }
+  .btn-secondary:hover { background: #475569; }
+  .btn-sm { padding: 4px 8px; font-size: 12px; }
+  .selected-count { font-size: 13px; color: #94a3b8; margin-left: auto; white-space: nowrap; }
+
+  .weapon-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: background 0.15s; margin-bottom: 2px; }
+  .weapon-item:hover { background: #293548; }
+  .weapon-item.selected { background: #1d4ed844; border: 1px solid #3b82f688; }
+  .weapon-item.dimmed { opacity: 0.35; pointer-events: none; }
+  .weapon-check-col {
+    display: flex; flex-direction: column; gap: 2px; align-items: center;
+    padding-top: 1px; flex-shrink: 0;
+  }
+  .weapon-check-col input[type="checkbox"] {
+    width: 15px; height: 15px; accent-color: #3b82f6; cursor: pointer;
+    margin-top: 3px;
+  }
+  .tag-btn {
+    padding: 1px 7px; border-radius: 4px; font-size: 10px; font-weight: 500;
+    cursor: pointer; user-select: none; border: none; line-height: 18px;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .tag-btn:hover { filter: brightness(1.2); }
+  .tag-btn-owned { background: #334155; color: #94a3b8; }
+  .tag-btn-owned.active { background: #16a34a; color: white; }
+  .tag-btn-matrix { background: #334155; color: #94a3b8; }
+  .tag-btn-matrix.active { background: #d97706; color: white; }
+  .weapon-info { flex: 1; min-width: 0; }
+  .weapon-name { font-size: 14px; font-weight: 500; color: #f1f5f9; }
+  .weapon-tags { font-size: 11px; color: #94a3b8; margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    padding: 1px 6px; border-radius: 4px; font-size: 11px; line-height: 18px;
+  }
+  .tag-star6 { background: #FF710022; color: #FF7100; }
+  .tag-star5 { background: #FFCC0022; color: #FFCC00; }
+  .tag-type { background: #334155; color: #94a3b8; }
+
+  /* 右侧结果区 */
+  .panel-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; height: 100vh; }
+  .result-header { padding: 16px 24px; background: #162032; border-bottom: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; }
+  .result-header h2 { font-size: 18px; font-weight: 600; color: #f1f5f9; }
+  .result-header .header-actions { display: flex; align-items: center; gap: 10px; }
+  .result-stats { display: flex; gap: 16px; font-size: 13px; color: #94a3b8; }
+  .stat-item strong { color: #e2e8f0; }
+  .btn-icon { background: none; border: 1px solid #475569; color: #94a3b8; border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+  .btn-icon:hover { background: #334155; color: #e2e8f0; border-color: #94a3b8; }
+
+  /* 设置弹窗 */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #1e293b; border: 1px solid #334155; border-radius: 12px; width: 360px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .modal-header { padding: 16px 20px; border-bottom: 1px solid #334155; display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 16px; font-weight: 600; color: #f1f5f9; }
+  .modal-close { background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; padding: 4px 8px; }
+  .modal-close:hover { color: #e2e8f0; }
+  .modal-body { padding: 16px 20px; flex: 1; overflow-y: auto; }
+  .modal-footer { padding: 12px 20px; border-top: 1px solid #334155; display: flex; justify-content: flex-end; gap: 8px; }
+  .priority-list { display: flex; flex-direction: column; gap: 6px; }
+  .priority-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+    cursor: grab; user-select: none; transition: all 0.15s;
+  }
+  .priority-item:active { cursor: grabbing; }
+  .priority-item.dragging { opacity: 0.4; background: #1e293b; }
+  .priority-item.drag-over { border-color: #3b82f6; background: #1e293b88; }
+  .priority-item .drag-handle { color: #475569; font-size: 14px; flex-shrink: 0; }
+  .priority-item .priority-rank { font-size: 11px; color: #64748b; background: #334155; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
+  .priority-item .priority-name { flex: 1; font-size: 14px; color: #e2e8f0; }
+  .result-stats { display: flex; gap: 20px; margin-top: 8px; }
+  .stat-item { font-size: 13px; color: #94a3b8; }
+  .stat-item strong { color: #f1f5f9; }
+
+  .result-list { flex: 1; overflow-y: auto; padding: 16px 24px; }
+  .step-card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 12px;
+  }
+  .step-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%; background: #3b82f6; color: white;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-title { font-size: 15px; font-weight: 600; color: #f1f5f9; }
+  .step-subtitle { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+  .step-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .step-field { font-size: 13px; }
+  .step-field-label { color: #64748b; margin-right: 4px; }
+  .step-field-value { color: #e2e8f0; }
+  .step-weapons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .weapon-chip {
+    padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;
+    background: #0f172a; color: #93c5fd; border: 1px solid #1e40af44;
+    display: inline-flex; flex-direction: column; gap: 2px;
+  }
+  .weapon-chip-attrs { display: flex; gap: 4px; }
+  .weapon-chip-attrs span {
+    font-size: 10px; font-weight: 400; color: #94a3b8;
+    padding: 0 4px; border-radius: 3px; background: #1e293b;
+  }
+
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #64748b;
+  }
+  .empty-state svg { width: 64px; height: 64px; opacity: 0.3; margin-bottom: 16px; }
+  .empty-state p { font-size: 15px; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- 左侧：武器选择 -->
+  <div class="panel-left">
+    <div class="panel-header">
+      <h1>基质刷取路径</h1>
+      <p>左侧勾选目标武器 → 右侧查看最优刷取顺序</p>
+    </div>
+
+    <div class="filter-section" id="filterSection">
+      <label>稀有度</label>
+      <select id="filterLevel" onchange="renderWeaponList();saveState()">
+        <option value="">全部</option>
+        <option value="6★">6★</option>
+        <option value="5★">5★</option>
+      </select>
+      <label>类型</label>
+      <select id="filterType" onchange="renderWeaponList();saveState()">
+        <option value="">全部</option>
+      </select>
+
+      <label>主属性</label>
+      <div class="multi-main" id="filterMain" style="grid-column:span 3"></div>
+
+      <label>附加属性</label>
+      <select id="filterAddition" onchange="renderWeaponList();saveState()">
+        <option value="">全部</option>
+      </select>
+      <label>技能</label>
+      <select id="filterSkill" onchange="renderWeaponList();saveState()">
+        <option value="">全部</option>
+      </select>
+
+      <label>淤积点</label>
+      <select id="filterMission" onchange="renderWeaponList();saveState()" style="grid-column:span 3">
+        <option value="">全部</option>
+      </select>
+
+      <div class="status-filters" id="filterStatus" style="grid-column:span 3">
+        <label class="status-tag active" data-group="owned" data-val="" onclick="setOwnedFilter('')">全部</label>
+        <label class="status-tag" data-group="owned" data-val="owned" onclick="setOwnedFilter('owned')">已获取</label>
+        <label class="status-tag" data-group="matrix" data-val="no" onclick="setMatrixFilter('no')">无基质</label>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary btn-sm" onclick="selectAllVisible()">全选可见</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters()">重置筛选</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearAll()">清空选择</button>
+        <button class="btn btn-secondary btn-sm" id="btnPinSelected" onclick="togglePinSelected()">已选置顶</button>
+      </div>
+      <span class="selected-count" id="selectedCount">已选 0 把</span>
+    </div>
+    <div class="action-bar" style="border-bottom:none;padding-top:4px;padding-bottom:4px">
+      <button class="btn btn-secondary btn-sm" id="btnCompact" onclick="toggleCompact()">简洁</button>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="btn btn-secondary btn-sm" onclick="exportConfig()">导出配置</button>
+        <button class="btn btn-secondary btn-sm" onclick="importConfig()">导入配置</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+    </div>
+
+    <div class="weapon-list" id="weaponList"></div>
+  </div>
+
+  <!-- 右侧：计算结果 -->
+  <div class="panel-right">
+    <div class="result-header">
+      <h2>最优刷取顺序</h2>
+      <div class="header-actions">
+        <div class="result-stats" id="resultStats"></div>
+        <button class="btn-icon" onclick="openSettings()" title="淤积点优先级设置">⚙ 设置</button>
+      </div>
+    </div>
+    <div class="result-list" id="resultList">
+      <div class="empty-state" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+        <p>请在左侧选择目标武器</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="bug-report">BUG反馈群：232130637</div>
+
+<!-- 设置弹窗 -->
+<div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>淤积点优先级</h3>
+      <button class="modal-close" onclick="closeSettings()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:#94a3b8;margin-bottom:12px">拖拽排序，越靠上优先级越高。覆盖武器数相同时，优先选择高优先级的淤积点。</p>
+      <div class="priority-list" id="priorityList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="resetPriority()">恢复默认</button>
+      <button class="btn btn-primary btn-sm" onclick="closeSettings()">确定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== 附加属性精简映射 ====================
+const addShort = { '攻击':'攻击','生命':'生命','法术':'法术','暴击率':'暴击','电磁伤害':'电磁','寒冷伤害':'寒冷','灼热伤害':'灼热','物理伤害':'物理','自然伤害':'自然','源石技艺强度':'源石','终结技充能效率':'充能','治疗效率':'治疗' };
+// ==================== 数据 ====================
+const weapons = [
+  { name:'孤舟',level:'6★',type:'施术单元',main:'意志',addition:'攻击',skill:'压制',missions:['枢纽区','源石研究园'] },
+  { name:'雾中微光',level:'6★',type:'施术单元',main:'意志',addition:'电磁伤害',skill:'效益',missions:['枢纽区','源石研究园'] },
+  { name:'狼之绯',level:'6★',type:'单手剑',main:'敏捷',addition:'暴击率',skill:'切骨',missions:['源石研究园','供能高地','武陵城'] },
+  { name:'落草',level:'6★',type:'手铳',main:'敏捷',addition:'攻击',skill:'迸发',missions:['枢纽区','武陵城'] },
+  { name:'光荣记忆',level:'6★',type:'单手剑',main:'敏捷',addition:'暴击率',skill:'夜幕',missions:['矿脉源区','武陵城'] },
+  { name:'望乡',level:'6★',type:'手铳',main:'敏捷',addition:'寒冷伤害',skill:'压制',missions:['枢纽区','源石研究园','矿脉源区','清波寨'] },
+  { name:'艺术暴君',level:'6★',type:'手铳',main:'智识',addition:'暴击率',skill:'切骨',missions:['源石研究园','供能高地','武陵城'] },
+  { name:'使命必达',level:'6★',type:'施术单元',main:'意志',addition:'终结技充能效率',skill:'追袭',missions:['枢纽区','源石研究园'] },
+  { name:'熔铸火焰',level:'6★',type:'单手剑',main:'智识',addition:'攻击',skill:'夜幕',missions:['武陵城'] },
+  { name:'宏愿',level:'6★',type:'单手剑',main:'敏捷',addition:'攻击',skill:'附术',missions:['源石研究园','供能高地'] },
+  { name:'不知归',level:'6★',type:'单手剑',main:'意志',addition:'攻击',skill:'流转',missions:['枢纽区','供能高地','武陵城'] },
+  { name:'黯色火炬',level:'6★',type:'单手剑',main:'智识',addition:'灼热伤害',skill:'附术',missions:['矿脉源区','供能高地'] },
+  { name:'扶摇',level:'6★',type:'单手剑',main:'主能力',addition:'暴击率',skill:'夜幕',missions:['矿脉源区','武陵城'] },
+  { name:'热熔切割器',level:'6★',type:'单手剑',main:'意志',addition:'攻击',skill:'流转',missions:['枢纽区','供能高地','武陵城'] },
+  { name:'显赫声明',level:'6★',type:'单手剑',main:'主能力',addition:'物理伤害',skill:'残暴',missions:['矿脉源区','供能高地'] },
+  { name:'白夜新星',level:'6★',type:'单手剑',main:'主能力',addition:'源石技艺强度',skill:'附术',missions:['矿脉源区','供能高地'] },
+  { name:'J.E.T',level:'6★',type:'长柄武器',main:'主能力',addition:'攻击',skill:'压制',missions:['枢纽区','源石研究园'] },
+  { name:'骁勇',level:'6★',type:'长柄武器',main:'敏捷',addition:'物理伤害',skill:'巧技',missions:['源石研究园','矿脉源区','清波寨'] },
+  { name:'负山',level:'6★',type:'长柄武器',main:'敏捷',addition:'物理伤害',skill:'效益',missions:['源石研究园','矿脉源区'] },
+  { name:'大雷斑',level:'6★',type:'双手剑',main:'力量',addition:'生命',skill:'医疗',missions:['供能高地','武陵城','清波寨'] },
+  { name:'赫拉芬格',level:'6★',type:'双手剑',main:'力量',addition:'攻击',skill:'迸发',missions:['枢纽区','武陵城'] },
+  { name:'典范',level:'6★',type:'双手剑',main:'主能力',addition:'攻击',skill:'压制',missions:['枢纽区','源石研究园'] },
+  { name:'昔日精品',level:'6★',type:'双手剑',main:'意志',addition:'生命',skill:'效益',missions:['矿脉源区'] },
+  { name:'破碎君王',level:'6★',type:'双手剑',main:'力量',addition:'暴击率',skill:'粉碎',missions:['供能高地','武陵城'] },
+  { name:'同类相食',level:'6★',type:'手铳',main:'主能力',addition:'法术',skill:'附术',missions:['源石研究园'] },
+  { name:'楔子',level:'6★',type:'手铳',main:'主能力',addition:'暴击率',skill:'附术',missions:['源石研究园','矿脉源区','供能高地'] },
+  { name:'领航者',level:'6★',type:'手铳',main:'智识',addition:'寒冷伤害',skill:'附术',missions:['源石研究园','矿脉源区'] },
+  { name:'骑士精神',level:'6★',type:'施术单元',main:'意志',addition:'生命',skill:'医疗',missions:['供能高地','武陵城','清波寨'] },
+  { name:'遗忘',level:'6★',type:'施术单元',main:'智识',addition:'法术',skill:'夜幕',missions:['武陵城','清波寨'] },
+  { name:'爆破单元',level:'6★',type:'施术单元',main:'主能力',addition:'源石技艺强度',skill:'迸发',missions:['枢纽区','矿脉源区','清波寨'] },
+  { name:'作品：蚀迹',level:'6★',type:'施术单元',main:'意志',addition:'自然伤害',skill:'压制',missions:['枢纽区','源石研究园','矿脉源区'] },
+  { name:'沧溟星梦',level:'6★',type:'施术单元',main:'智识',addition:'治疗效率',skill:'附术',missions:['矿脉源区','供能高地'] },
+  { name:'仰止',level:'5★',type:'单手剑',main:'敏捷',addition:'物理伤害',skill:'夜幕',missions:['矿脉源区','清波寨'] },
+  { name:'O.B.J.轻芒',level:'5★',type:'单手剑',main:'敏捷',addition:'攻击',skill:'流转',missions:['枢纽区','供能高地','武陵城'] },
+  { name:'十二问',level:'5★',type:'单手剑',main:'敏捷',addition:'攻击',skill:'附术',missions:['源石研究园','供能高地'] },
+  { name:'逐鳞3.0',level:'5★',type:'单手剑',main:'力量',addition:'寒冷伤害',skill:'压制',missions:['枢纽区','源石研究园','矿脉源区','清波寨'] },
+  { name:'坚城铸造者',level:'5★',type:'单手剑',main:'智识',addition:'终结技充能效率',skill:'昂扬',missions:['源石研究园','清波寨'] },
+  { name:'钢铁余音',level:'5★',type:'单手剑',main:'敏捷',addition:'物理伤害',skill:'巧技',missions:['源石研究园','矿脉源区','清波寨'] },
+  { name:'O.B.J重荷',level:'5★',type:'双手剑',main:'力量',addition:'生命',skill:'效益',missions:['矿脉源区'] },
+  { name:'终点之声',level:'5★',type:'双手剑',main:'力量',addition:'生命',skill:'医疗',missions:['供能高地','武陵城','清波寨'] },
+  { name:'古渠',level:'5★',type:'双手剑',main:'力量',addition:'源石技艺强度',skill:'残暴',missions:['矿脉源区','供能高地'] },
+  { name:'探骊',level:'5★',type:'双手剑',main:'力量',addition:'终结技充能效率',skill:'迸发',missions:['枢纽区','武陵城','清波寨'] },
+  { name:'向心之引',level:'5★',type:'长柄武器',main:'意志',addition:'电磁伤害',skill:'压制',missions:['枢纽区','源石研究园','清波寨'] },
+  { name:'O.B.J.尖峰',level:'5★',type:'长柄武器',main:'意志',addition:'物理伤害',skill:'附术',missions:['源石研究园','矿脉源区','供能高地'] },
+  { name:'嵌合正义',level:'5★',type:'长柄武器',main:'力量',addition:'终结技充能效率',skill:'残暴',missions:['武陵城'] },
+  { name:'理性告别',level:'5★',type:'手铳',main:'力量',addition:'灼热伤害',skill:'追袭',missions:['枢纽区','供能高地'] },
+  { name:'O.B.J.迅极',level:'5★',type:'手铳',main:'敏捷',addition:'终结技充能效率',skill:'迸发',missions:['枢纽区','武陵城','清波寨'] },
+  { name:'作品：众生',level:'5★',type:'手铳',main:'敏捷',addition:'法术',skill:'附术',missions:['源石研究园'] },
+  { name:'O.B.J.术识',level:'5★',type:'施术单元',main:'智识',addition:'源石技艺强度',skill:'追袭',missions:['枢纽区','供能高地'] },
+  { name:'布道自由',level:'5★',type:'施术单元',main:'意志',addition:'治疗效率',skill:'医疗',missions:['供能高地','武陵城','清波寨'] },
+  { name:'迷失荒野',level:'5★',type:'施术单元',main:'智识',addition:'电磁伤害',skill:'附术',missions:['源石研究园'] },
+  { name:'莫奈何',level:'5★',type:'施术单元',main:'意志',addition:'终结技充能效率',skill:'昂扬',missions:['源石研究园','清波寨'] },
+  { name:'悼亡诗',level:'5★',type:'施术单元',main:'智识',addition:'攻击',skill:'夜幕',missions:['武陵城'] },
+];
+
+const missions = [
+  {name:'枢纽区',skills:['效益','流转','迸发','巧技','粉碎','追袭','压制','强攻'],additions:['攻击提升','灼热伤害提升','电磁伤害提升','寒冷伤害提升','自然伤害提升','源石技艺强度提升','终结技充能效率提升','法术提升']},
+  {name:'源石研究园',skills:['效益','切骨','医疗','附术','巧技','昂扬','追袭','压制'],additions:['攻击提升','物理伤害提升','电磁伤害提升','寒冷伤害提升','自然伤害提升','暴击率提升','终结技充能效率提升','法术提升']},
+  {name:'矿脉源区',skills:['效益','夜幕','迸发','附术','残暴','巧技','压制','强攻'],additions:['生命提升','物理伤害提升','灼热伤害提升','寒冷伤害提升','自然伤害提升','暴击率提升','源石技艺强度提升','治疗效率提升']},
+  {name:'供能高地',skills:['流转','切骨','医疗','附术','残暴','昂扬','粉碎','追袭'],additions:['攻击提升','生命提升','物理伤害提升','灼热伤害提升','自然伤害提升','暴击率提升','源石技艺强度提升','治疗效率提升']},
+  {name:'武陵城',skills:['强攻','粉碎','残暴','医疗','切骨','迸发','夜幕','流转'],additions:['攻击提升','生命提升','电磁伤害提升','寒冷伤害提升','暴击率提升','终结技充能效率提升','法术提升','治疗效率提升']},
+  {name:'清波寨',skills:['压制','粉碎','昂扬','巧技','医疗','切骨','迸发','夜幕'],additions:['生命提升','物理伤害提升','电磁伤害提升','寒冷伤害提升','源石技艺强度提升','终结技充能效率提升','法术提升','治疗效率提升']},
+];
+
+const MAX_MAINS = 3;
+
+// ==================== 状态 ====================
+let selectedNames = new Set();
+let selectedMains = new Set();
+let ownedSet = new Set();
+let matrixSet = new Set();
+const MAX_MAIN_FILTER = 3;
+let ownedFilter = ''; // '' | 'need' | 'owned'
+let matrixFilter = ''; // '' | 'yes' | 'no'
+let pinSelected = false;
+let compactMode = false;
+
+// ==================== 初始化 ====================
+function init() {
+  // 填充类型筛选
+  const types = [...new Set(weapons.map(w => w.type))].sort();
+  const selType = document.getElementById('filterType');
+  types.forEach(t => { const o = document.createElement('option'); o.value=t; o.textContent=t; selType.appendChild(o); });
+
+  // 填充主属性多选
+  const mains = [...new Set(weapons.map(w => w.main))].sort();
+  const mainContainer = document.getElementById('filterMain');
+  mains.forEach(m => {
+    const lbl = document.createElement('label');
+    lbl.innerHTML = `<input type="checkbox" value="${m}" onchange="toggleMain('${m}')"> ${m}`;
+    mainContainer.appendChild(lbl);
+  });
+  const hint = document.createElement('span');
+  hint.className = 'filter-hint';
+  hint.textContent = '最多3个';
+  mainContainer.appendChild(hint);
+
+  // 填充附加属性筛选
+  const additions = [...new Set(weapons.map(w => w.addition))].sort();
+  const selAddition = document.getElementById('filterAddition');
+  additions.forEach(a => { const o = document.createElement('option'); o.value=a; o.textContent=addShort[a]||a; selAddition.appendChild(o); });
+
+  // 填充技能筛选
+  const skills = [...new Set(weapons.map(w => w.skill))].sort();
+  const selSkill = document.getElementById('filterSkill');
+  skills.forEach(s => { const o = document.createElement('option'); o.value=s; o.textContent=s; selSkill.appendChild(o); });
+
+  // 填充副本筛选
+  renderMissionSelect();
+
+  // 恢复上次状态
+  loadState();
+  renderWeaponList();
+  updateCount();
+  runSolve();
+}
+
+// ==================== 本地存储 ====================
+const STORAGE_KEY = 'weapon_calc_state';
+
+function saveState() {
+  try {
+    const state = {
+      selectedNames: [...selectedNames],
+      selectedMains: [...selectedMains],
+      ownedSet: [...ownedSet],
+      matrixSet: [...matrixSet],
+      ownedFilter,
+      matrixFilter,
+      filterLevel: document.getElementById('filterLevel').value,
+      filterType: document.getElementById('filterType').value,
+      filterAddition: document.getElementById('filterAddition').value,
+      filterSkill: document.getElementById('filterSkill').value,
+      filterMission: document.getElementById('filterMission').value,
+      missionPriority,
+      pinSelected,
+      compactMode,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    const weaponNames = new Set(weapons.map(w => w.name));
+    const allMissions = MISSION_NAMES;
+
+    // 恢复选中武器（过滤已不存在的）
+    if (state.selectedNames) selectedNames = new Set(state.selectedNames.filter(n => weaponNames.has(n)));
+    // 恢复主属性筛选
+    if (state.selectedMains) selectedMains = new Set(state.selectedMains);
+    // 恢复已获取（过滤已不存在的）
+    if (state.ownedSet) ownedSet = new Set(state.ownedSet.filter(n => weaponNames.has(n)));
+    // 恢复有基质（过滤已不存在的）
+    if (state.matrixSet) matrixSet = new Set(state.matrixSet.filter(n => weaponNames.has(n)));
+    // 恢复筛选条件
+    if (state.ownedFilter !== undefined) ownedFilter = state.ownedFilter;
+    if (state.matrixFilter !== undefined) matrixFilter = state.matrixFilter;
+    refreshStatusUI();
+    if (state.filterLevel !== undefined) document.getElementById('filterLevel').value = state.filterLevel;
+    if (state.filterType !== undefined) document.getElementById('filterType').value = state.filterType;
+    if (state.filterAddition !== undefined) document.getElementById('filterAddition').value = state.filterAddition;
+    if (state.filterSkill !== undefined) document.getElementById('filterSkill').value = state.filterSkill;
+    if (state.filterMission !== undefined) document.getElementById('filterMission').value = state.filterMission;
+    // 恢复淤积点优先级（兼容新增淤积点）
+    if (state.missionPriority) {
+      const saved = state.missionPriority;
+      // 已有的按保存顺序排，新增的追加到末尾
+      const existing = new Set(allMissions);
+      const ordered = saved.filter(m => existing.has(m));
+      allMissions.forEach(m => { if (!ordered.includes(m)) ordered.push(m); });
+      missionPriority = ordered;
+    }
+    // 刷新主属性多选UI
+    refreshMainUI();
+    // 刷新淤积点下拉顺序
+    renderMissionSelect();
+    // 恢复已选置顶
+    if (state.pinSelected) {
+      pinSelected = true;
+      document.getElementById('btnPinSelected').className = 'btn btn-primary btn-sm';
+    }
+    // 恢复简洁模式
+    if (state.compactMode) {
+      compactMode = true;
+      const btn = document.getElementById('btnCompact');
+      btn.textContent = '详细';
+      btn.className = 'btn btn-primary btn-sm';
+    }
+  } catch(e) {}
+}
+
+function setOwnedFilter(val) {
+  if (val === '') { ownedFilter = ''; matrixFilter = ''; }
+  else { ownedFilter = ownedFilter === val ? '' : val; }
+  refreshStatusUI();
+  renderWeaponList();
+  saveState();
+}
+
+function setMatrixFilter(val) {
+  if (val === '') { ownedFilter = ''; matrixFilter = ''; }
+  else { matrixFilter = matrixFilter === val ? '' : val; }
+  refreshStatusUI();
+  renderWeaponList();
+  saveState();
+}
+
+function refreshStatusUI() {
+  document.querySelectorAll('.status-tag').forEach(lbl => {
+    const g = lbl.dataset.group;
+    const v = lbl.dataset.val;
+    let isActive = false;
+    if (g === 'owned' && v === '' && !ownedFilter && !matrixFilter) isActive = true;
+    else if (g === 'owned' && v !== '' && ownedFilter === v) isActive = true;
+    else if (g === 'matrix' && v !== '' && matrixFilter === v) isActive = true;
+    lbl.className = 'status-tag' + (isActive ? ' active' : '');
+  });
+}
+
+function toggleMain(main) {
+  if (selectedMains.has(main)) selectedMains.delete(main);
+  else if (selectedMains.size < MAX_MAIN_FILTER) selectedMains.add(main);
+  refreshMainUI();
+  renderWeaponList();
+  saveState();
+}
+
+function refreshMainUI() {
+  const container = document.getElementById('filterMain');
+  const labels = container.querySelectorAll('label');
+  labels.forEach(lbl => {
+    const val = lbl.querySelector('input').value;
+    const isActive = selectedMains.has(val);
+    const isDisabled = !isActive && selectedMains.size >= MAX_MAIN_FILTER;
+    lbl.className = isActive ? 'active' : (isDisabled ? 'disabled' : '');
+    lbl.querySelector('input').checked = isActive;
+  });
+}
+
+// ==================== 武器列表渲染 ====================
+function renderWeaponList() {
+  const flvl = document.getElementById('filterLevel').value;
+  const ftyp = document.getElementById('filterType').value;
+  const fadd = document.getElementById('filterAddition').value;
+  const fskill = document.getElementById('filterSkill').value;
+  const fmission = document.getElementById('filterMission').value;
+
+  let list = weapons;
+  if (flvl) list = list.filter(w => w.level === flvl);
+  if (ftyp) list = list.filter(w => w.type === ftyp);
+  if (selectedMains.size > 0) list = list.filter(w => selectedMains.has(w.main));
+  if (fadd) list = list.filter(w => w.addition === fadd);
+  if (fskill) list = list.filter(w => w.skill === fskill);
+  if (fmission) list = list.filter(w => w.missions.includes(fmission));
+  // 状态筛选
+  if (ownedFilter === 'need') list = list.filter(w => !ownedSet.has(w.name));
+  else if (ownedFilter === 'owned') list = list.filter(w => ownedSet.has(w.name));
+  if (matrixFilter === 'yes') list = list.filter(w => matrixSet.has(w.name));
+  else if (matrixFilter === 'no') list = list.filter(w => !matrixSet.has(w.name));
+  // 已选置顶
+  if (pinSelected) list = [...list].sort((a,b) => (selectedNames.has(b.name)?1:0) - (selectedNames.has(a.name)?1:0));
+
+  const container = document.getElementById('weaponList');
+  if (compactMode) {
+    container.innerHTML = '<div class="compact-grid">' + list.map(w => {
+      const isOwned = ownedSet.has(w.name);
+      const isMatrix = matrixSet.has(w.name);
+      const color = w.level==='6★'?'#FF7100':'#FFCC00';
+      return `
+      <div class="compact-item ${selectedNames.has(w.name)?'selected':''}" onclick="toggleWeapon('${w.name}')">
+        <span class="compact-name" style="color:${color}">${w.name}</span>
+        <div class="compact-tags">
+          <button class="tag-btn tag-btn-owned${isOwned?' active':''}" onclick="event.stopPropagation();toggleOwned('${w.name}')">已获取</button>
+          <button class="tag-btn tag-btn-matrix${isMatrix?' active':''}" onclick="event.stopPropagation();toggleMatrix('${w.name}')">有基质</button>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  } else {
+    container.innerHTML = list.map(w => {
+    const isOwned = ownedSet.has(w.name);
+    const isMatrix = matrixSet.has(w.name);
+    return `
+    <div class="weapon-item ${selectedNames.has(w.name)?'selected':''}" data-name="${w.name}">
+      <div class="weapon-check-col">
+        <input type="checkbox" ${selectedNames.has(w.name)?'checked':''} onclick="event.stopPropagation();toggleWeapon('${w.name}')">
+        <button class="tag-btn tag-btn-owned${isOwned?' active':''}" onclick="event.stopPropagation();toggleOwned('${w.name}')">已获取</button>
+        <button class="tag-btn tag-btn-matrix${isMatrix?' active':''}" onclick="event.stopPropagation();toggleMatrix('${w.name}')">有基质</button>
+      </div>
+      <div class="weapon-info" style="flex:1;min-width:0" onclick="toggleWeapon('${w.name}')">
+        <div class="weapon-name" style="display:flex;align-items:center;gap:6px">${w.name}<span class="tag tag-type">${w.type}</span></div>
+        <div class="weapon-tags">
+          <span class="tag ${w.level==='6★'?'tag-star6':'tag-star5'}">${w.level}</span>
+          <span class="tag tag-type">${w.main}</span>
+          <span class="tag tag-type">${addShort[w.addition]||w.addition}</span>
+          <span class="tag tag-type">${w.skill}</span>
+        </div>
+      </div>
+    </div>`}).join('');
+  }
+}
+
+function toggleWeapon(name) {
+  if (selectedNames.has(name)) selectedNames.delete(name);
+  else selectedNames.add(name);
+  renderWeaponList();
+  updateCount();
+  runSolve();
+  saveState();
+}
+
+function toggleOwned(name) {
+  if (ownedSet.has(name)) ownedSet.delete(name); else ownedSet.add(name);
+  renderWeaponList();
+  saveState();
+}
+
+function toggleMatrix(name) {
+  if (matrixSet.has(name)) matrixSet.delete(name); else matrixSet.add(name);
+  renderWeaponList();
+  saveState();
+}
+function togglePinSelected() {
+  pinSelected = !pinSelected;
+  const btn = document.getElementById('btnPinSelected');
+  btn.className = pinSelected ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+  renderWeaponList();
+  saveState();
+}
+function toggleCompact() {
+  compactMode = !compactMode;
+  const btn = document.getElementById('btnCompact');
+  btn.textContent = compactMode ? '详细' : '简洁';
+  btn.className = compactMode ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm';
+  renderWeaponList();
+  saveState();
+}
+
+function exportConfig() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) { alert('没有可导出的配置'); return; }
+    const blob = new Blob([raw], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'weapon_calc_config.json';
+    a.click(); URL.revokeObjectURL(url);
+  } catch(e) { alert('导出失败'); }
+}
+
+function importConfig() {
+  document.getElementById('importFile').click();
+}
+
+function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.selectedNames && !data.ownedSet && !data.missionPriority) {
+        alert('无效的配置文件'); return;
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      loadState();
+      renderWeaponList();
+      updateCount();
+      runSolve();
+      alert('导入成功');
+    } catch(err) { alert('导入失败：文件格式错误'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+function selectAllVisible() {
+  const flvl = document.getElementById('filterLevel').value;
+  const ftyp = document.getElementById('filterType').value;
+  const fadd = document.getElementById('filterAddition').value;
+  const fskill = document.getElementById('filterSkill').value;
+  const fmission = document.getElementById('filterMission').value;
+  weapons.forEach(w => {
+    if ((!flvl || w.level === flvl)
+      && (!ftyp || w.type === ftyp)
+      && (selectedMains.size === 0 || selectedMains.has(w.main))
+      && (!fadd || w.addition === fadd)
+      && (!fskill || w.skill === fskill)
+      && (!fmission || w.missions.includes(fmission))
+      && (ownedFilter !== 'need' || !ownedSet.has(w.name))
+      && (ownedFilter !== 'owned' || ownedSet.has(w.name))
+      && (matrixFilter !== 'yes' || matrixSet.has(w.name))
+      && (matrixFilter !== 'no' || !matrixSet.has(w.name))) selectedNames.add(w.name);
+  });
+  renderWeaponList(); updateCount(); runSolve(); saveState();
+}
+function clearAll() { selectedNames.clear(); renderWeaponList(); updateCount(); runSolve(); saveState(); }
+function clearFilters() {
+  document.getElementById('filterLevel').value = '';
+  document.getElementById('filterType').value = '';
+  document.getElementById('filterAddition').value = '';
+  document.getElementById('filterSkill').value = '';
+  document.getElementById('filterMission').value = '';
+  selectedMains.clear();
+  refreshMainUI();
+  ownedFilter = '';
+  matrixFilter = '';
+  refreshStatusUI();
+  renderWeaponList();
+  saveState();
+}
+function updateCount() { document.getElementById('selectedCount').textContent = `已选 ${selectedNames.size} 把`; }
+
+// ==================== 核心求解逻辑 ====================
+function getWeaponSlots(weapon) {
+  const result = [];
+  for (const m of missions) {
+    if (!weapon.missions.includes(m.name)) continue;
+    if (m.additions.includes(weapon.addition + '提升')) result.push({ missionName: m.name, strategy: 'fixAddition', fixedValue: weapon.addition + '提升' });
+    if (m.skills.includes(weapon.skill)) result.push({ missionName: m.name, strategy: 'fixSkill', fixedValue: weapon.skill });
+  }
+  return result;
+}
+
+function generateAllCombos(remaining) {
+  const combos = [];
+  const slotMap = new Map();
+  for (const w of remaining) {
+    const slots = getWeaponSlots(w);
+    for (const s of slots) {
+      const key = `${s.missionName}|${s.strategy}|${s.fixedValue}`;
+      if (!slotMap.has(key)) slotMap.set(key, { ...s, weapons: [] });
+      slotMap.get(key).weapons.push(w);
+    }
+  }
+  for (const [, slot] of slotMap) {
+    const mainGroups = new Map();
+    for (const w of slot.weapons) { if (!mainGroups.has(w.main)) mainGroups.set(w.main,[]); mainGroups.get(w.main).push(w.name); }
+    const allMains = [...mainGroups.keys()];
+    if (allMains.length <= MAX_MAINS) {
+      combos.push({ missionName: slot.missionName, strategy: slot.strategy, fixedValue: slot.fixedValue, mains: allMains, coveredWeapons: allMains.flatMap(m=>mainGroups.get(m)) });
+    } else {
+      const sorted = allMains.sort((a,b)=>mainGroups.get(b).length-mainGroups.get(a).length);
+      const top3 = sorted.slice(0, MAX_MAINS);
+      combos.push({ missionName: slot.missionName, strategy: slot.strategy, fixedValue: slot.fixedValue, mains: top3, coveredWeapons: top3.flatMap(m=>mainGroups.get(m)) });
+    }
+  }
+  return combos;
+}
+
+function solve(targetNames) {
+  const targetWeapons = weapons.filter(w => targetNames.includes(w.name));
+  if (targetWeapons.length === 0) return [];
+  const steps = [];
+  let remaining = targetWeapons;
+  while (remaining.length > 0) {
+    const allCombos = generateAllCombos(remaining);
+    allCombos.sort((a,b)=>b.coveredWeapons.length-a.coveredWeapons.length || getMissionPriority(a.missionName)-getMissionPriority(b.missionName));
+    const best = allCombos[0];
+    if (!best || best.coveredWeapons.length===0) break;
+    steps.push(best);
+    const coveredSet = new Set(best.coveredWeapons);
+    remaining = remaining.filter(w => !coveredSet.has(w.name));
+  }
+  return steps;
+}
+
+// ==================== 结果渲染 ====================
+function runSolve() {
+  const container = document.getElementById('resultList');
+  const statsEl = document.getElementById('resultStats');
+
+  if (selectedNames.size === 0) {
+    container.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg><p>请在左侧选择目标武器</p></div>`;
+    statsEl.innerHTML = '';
+    return;
+  }
+
+  const names = [...selectedNames];
+  const steps = solve(names);
+  const coveredAll = new Set(steps.flatMap(s=>s.coveredWeapons));
+  const missing = names.filter(n=>!coveredAll.has(n));
+
+  statsEl.innerHTML = `
+    <span class="stat-item">目标: <strong>${names.length}</strong> 把</span>
+    <span class="stat-item">步骤: <strong>${steps.length}</strong></span>
+    <span class="stat-item">未覆盖: <strong>${missing.length?missing.join(', '):'无'}</strong></span>
+  `;
+
+  if (steps.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>无法找到有效方案</p></div>';
+    return;
+  }
+
+  container.innerHTML = steps.map((s,i) => {
+    const stratLabel = s.strategy === 'fixAddition' ? '固定附加' : '固定技能';
+    return `
+      <div class="step-card">
+        <div class="step-head">
+          <div class="step-num">${i+1}</div>
+          <div><div class="step-title">${s.missionName}</div><div class="step-subtitle">${stratLabel}: ${s.fixedValue}</div></div>
+        </div>
+        <div class="step-detail">
+          <div class="step-field"><span class="step-field-label">主属性:</span><span class="step-field-value">${s.mains.join(', ')}</span></div>
+          <div class="step-field"><span class="step-field-label">覆盖:</span><span class="step-field-value">${s.coveredWeapons.length} 把武器</span></div>
+        </div>
+        <div class="step-weapons">${s.coveredWeapons.map(n => {
+          const w = weapons.find(ww => ww.name === n);
+          return `<span class="weapon-chip"><span style="color:${w&&w.level==='6★'?'#FF7100':'#FFCC00'}">${n}</span><div class="weapon-chip-attrs">${w?`<span>${w.main}</span><span>${addShort[w.addition]||w.addition}</span><span>${w.skill}</span>`:''}</div></span>`;
+        }).join('')}</div>
+      </div>`;
+  }).join('');
+}
+
+// ==================== 淤积点优先级 ====================
+const MISSION_NAMES = ['枢纽区','源石研究园','矿脉源区','供能高地','武陵城','清波寨'];
+let missionPriority = [...MISSION_NAMES];
+
+function openSettings() {
+  renderPriorityList();
+  document.getElementById('settingsModal').classList.add('show');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+  runSolve();
+}
+function resetPriority() {
+  missionPriority = [...MISSION_NAMES];
+  renderPriorityList();
+  renderMissionSelect();
+  saveState();
+}
+
+function renderPriorityList() {
+  const container = document.getElementById('priorityList');
+  container.innerHTML = missionPriority.map((name, i) => `
+    <div class="priority-item" draggable="true" data-index="${i}"
+         ondragstart="dragStart(event)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropItem(event)" ondragend="dragEnd(event)">
+      <span class="drag-handle">⠿</span>
+      <span class="priority-rank">${i+1}</span>
+      <span class="priority-name">${name}</span>
+    </div>
+  `).join('');
+}
+
+let dragIndex = null;
+function dragStart(e) {
+  dragIndex = +e.currentTarget.dataset.index;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function dragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function dragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+function dropItem(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const toIndex = +e.currentTarget.dataset.index;
+  if (dragIndex !== null && dragIndex !== toIndex) {
+    const item = missionPriority.splice(dragIndex, 1)[0];
+    missionPriority.splice(toIndex, 0, item);
+    renderPriorityList();
+    renderMissionSelect();
+    saveState();
+  }
+}
+function dragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  dragIndex = null;
+}
+
+function getMissionPriority(name) {
+  const idx = missionPriority.indexOf(name);
+  return idx === -1 ? 999 : idx;
+}
+
+function renderMissionSelect() {
+  const selMission = document.getElementById('filterMission');
+  const curVal = selMission.value;
+  selMission.innerHTML = '<option value="">全部</option>';
+  missionPriority.forEach(mn => {
+    const o = document.createElement('option');
+    o.value = mn; o.textContent = mn;
+    selMission.appendChild(o);
+  });
+  selMission.value = curVal;
+}
+
+// ==================== 跨标签页同步 ====================
+window.addEventListener('storage', (e) => {
+  if (e.key === STORAGE_KEY) loadState();
+  renderWeaponList();
+  updateCount();
+  runSolve();
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    loadState();
+    renderWeaponList();
+    updateCount();
+    runSolve();
+  }
+});
+
+init();
+</script>
+</body>
+</html>
