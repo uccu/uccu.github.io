@@ -13,17 +13,31 @@
     color: #e2e8f0;
     min-height: 100dvh;
     display: flex;
-    flex-direction: column;
-    align-items: center;
     overflow-x: hidden;
     user-select: none;
+  }
+
+  .main-layout {
+    display: flex;
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    min-height: 100dvh;
+  }
+
+  .game-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
   }
 
   .header {
     text-align: center;
     padding: 24px 16px 8px;
     width: 100%;
-    max-width: 560px;
+    max-width: 480px;
   }
 
   .header h1 {
@@ -48,7 +62,7 @@
     flex-wrap: wrap;
     padding: 12px 16px;
     width: 100%;
-    max-width: 560px;
+    max-width: 480px;
   }
 
   .size-btn {
@@ -72,7 +86,7 @@
     gap: 32px;
     padding: 8px 16px 16px;
     width: 100%;
-    max-width: 560px;
+    max-width: 480px;
   }
 
   .info-item {
@@ -99,7 +113,7 @@
   .grid-wrapper {
     padding: 0 16px;
     width: 100%;
-    max-width: 560px;
+    max-width: 480px;
   }
 
   .grid {
@@ -312,7 +326,112 @@
 
   .modal .action-btn { width: 100%; margin-top: 6px; }
 
+  /* 侧边说明栏 */
+  .sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    padding: 24px 20px 24px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .sidebar-card {
+    background: #1e293b;
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .sidebar-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sidebar-card h3 .icon {
+    font-size: 16px;
+  }
+
+  .sidebar-card ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .sidebar-card li {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.9;
+    padding-left: 16px;
+    position: relative;
+  }
+
+  .sidebar-card li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #3b82f6;
+  }
+
+  .sidebar-card li strong {
+    color: #e2e8f0;
+  }
+
+  .ref-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .ref-table th, .ref-table td {
+    font-size: 12px;
+    padding: 5px 6px;
+    text-align: center;
+    color: #94a3b8;
+  }
+
+  .ref-table th {
+    color: #64748b;
+    font-weight: 600;
+    border-bottom: 1px solid #334155;
+  }
+
+  .ref-table td:first-child, .ref-table th:first-child {
+    text-align: left;
+  }
+
+  /* 手机端说明（横排在顶部） */
+  .mobile-guide {
+    display: none;
+    width: 100%;
+    max-width: 480px;
+    padding: 0 16px;
+  }
+
+  .mobile-guide-inner {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.7;
+  }
+
+  .mobile-guide-inner strong { color: #e2e8f0; }
+
   /* 响应式 */
+  @media (max-width: 768px) {
+    .main-layout { flex-direction: column; align-items: center; }
+    .sidebar { display: none; }
+    .mobile-guide { display: block; }
+  }
+
   @media (max-width: 420px) {
     .header h1 { font-size: 22px; }
     .cell { font-size: 20px; border-radius: 8px; }
@@ -323,41 +442,89 @@
 </head>
 <body>
 
-<div class="header">
-  <h1>舒尔特方格</h1>
-  <p>按数字顺序依次点击，训练注意力</p>
-</div>
+<div class="main-layout">
+  <!-- 游戏区域 -->
+  <div class="game-area">
 
-<div class="controls" id="sizeControls">
-  <button class="size-btn" data-size="3">3×3</button>
-  <button class="size-btn" data-size="4">4×4</button>
-  <button class="size-btn active" data-size="5">5×5</button>
-  <button class="size-btn" data-size="6">6×6</button>
-  <button class="size-btn" data-size="7">7×7</button>
-</div>
+    <!-- 手机端简明说明 -->
+    <div class="mobile-guide">
+      <div class="mobile-guide-inner">
+        从 <strong>1</strong> 开始按顺序点击数字，点完所有格子即完成。坚持练习可提升注意力！
+      </div>
+    </div>
 
-<div class="info-bar">
-  <div class="info-item">
-    <div class="info-label">用时</div>
-    <div class="info-value time" id="timer">0.00</div>
+    <div class="header">
+      <h1>舒尔特方格</h1>
+      <p>按数字顺序依次点击，训练注意力</p>
+    </div>
+
+    <div class="controls" id="sizeControls">
+      <button class="size-btn" data-size="3">3×3</button>
+      <button class="size-btn" data-size="4">4×4</button>
+      <button class="size-btn active" data-size="5">5×5</button>
+      <button class="size-btn" data-size="6">6×6</button>
+      <button class="size-btn" data-size="7">7×7</button>
+    </div>
+
+    <div class="info-bar">
+      <div class="info-item">
+        <div class="info-label">用时</div>
+        <div class="info-value time" id="timer">0.00</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">下一个</div>
+        <div class="info-value next" id="nextNum">1</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">最佳</div>
+        <div class="info-value best" id="bestTime">--</div>
+      </div>
+    </div>
+
+    <div class="grid-wrapper">
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="action-btn btn-start" id="startBtn">开始</button>
+      <button class="action-btn btn-reset" id="resetBtn">重置</button>
+    </div>
+
   </div>
-  <div class="info-item">
-    <div class="info-label">下一个</div>
-    <div class="info-value next" id="nextNum">1</div>
-  </div>
-  <div class="info-item">
-    <div class="info-label">最佳</div>
-    <div class="info-value best" id="bestTime">--</div>
-  </div>
-</div>
 
-<div class="grid-wrapper">
-  <div class="grid" id="grid"></div>
-</div>
-
-<div class="btn-row">
-  <button class="action-btn btn-start" id="startBtn">开始</button>
-  <button class="action-btn btn-reset" id="resetBtn">重置</button>
+  <!-- 侧边说明栏 -->
+  <div class="sidebar">
+    <div class="sidebar-card">
+      <h3><span class="icon">📋</span> 玩法规则</h3>
+      <ul>
+        <li>方格内随机排列 1 ~ N² 的数字</li>
+        <li>从 <strong>1</strong> 开始，按顺序依次点击</li>
+        <li>点对变绿，点错变红并抖动</li>
+        <li>计时从第一次点击开始</li>
+        <li>全部点完即结束</li>
+      </ul>
+    </div>
+    <div class="sidebar-card">
+      <h3><span class="icon">🧠</span> 训练效果</h3>
+      <ul>
+        <li>最普遍的<strong>注意力训练</strong>方法</li>
+        <li>提升视觉搜索速度</li>
+        <li>增强专注力集中度</li>
+        <li>每天 10~15 分钟，4~6 周见效</li>
+      </ul>
+    </div>
+    <div class="sidebar-card">
+      <h3><span class="icon">📊</span> 参考标准（5×5）</h3>
+      <table class="ref-table">
+        <tr><th>等级</th><th>用时</th><th>说明</th></tr>
+        <tr><td>极强</td><td>&lt; 15s</td><td>飞行员级别</td></tr>
+        <tr><td>优秀</td><td>15~25s</td><td>注意力出众</td></tr>
+        <tr><td>良好</td><td>25~30s</td><td>中上水平</td></tr>
+        <tr><td>一般</td><td>30~40s</td><td>普通水平</td></tr>
+        <tr><td>需练习</td><td>&gt; 40s</td><td>继续提升</td></tr>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div class="overlay" id="overlay">
@@ -499,11 +666,11 @@
   // 不同尺寸的参考平均用时(秒)和标准差，用于估算百分位
   // 基于舒尔特方格的一般人群数据拟合
   const sizeStats = {
-    3: { mean: 8,   sd: 3   },
-    4: { mean: 18,  sd: 6   },
-    5: { mean: 30,  sd: 10  },
-    6: { mean: 50,  sd: 15  },
-    7: { mean: 75,  sd: 20  },
+    3: { mean: 7,   sd: 2.5 },
+    4: { mean: 15,  sd: 5   },
+    5: { mean: 25,  sd: 8   },
+    6: { mean: 45,  sd: 12  },
+    7: { mean: 70,  sd: 18  },
   };
 
   // 正态分布累积概率(近似)
@@ -605,7 +772,7 @@
   buildGrid();
 })();
 </script>
-<script>
+ <script>
         (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
         (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
         m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
