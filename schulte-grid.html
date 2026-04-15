@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>舒尔特方格</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    user-select: none;
+  }
+
+  .header {
+    text-align: center;
+    padding: 24px 16px 8px;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header p {
+    font-size: 14px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .size-btn {
+    padding: 8px 18px;
+    border: 2px solid #334155;
+    border-radius: 10px;
+    background: #1e293b;
+    color: #94a3b8;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .size-btn:hover { border-color: #60a5fa; color: #60a5fa; }
+  .size-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+
+  .info-bar {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    padding: 8px 16px 16px;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .info-item {
+    text-align: center;
+  }
+
+  .info-label {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .info-value {
+    font-size: 28px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .info-value.time { color: #34d399; }
+  .info-value.next { color: #fbbf24; }
+  .info-value.best { color: #f472b6; }
+
+  .grid-wrapper {
+    padding: 0 16px;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .grid {
+    display: grid;
+    gap: 6px;
+    aspect-ratio: 1;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1e293b;
+    border-radius: 10px;
+    font-size: 24px;
+    font-weight: 700;
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: transform .1s, background .15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cell:active { transform: scale(0.92); }
+
+  .cell.correct {
+    background: #059669;
+    color: #fff;
+    animation: pop .3s ease;
+  }
+
+  .cell.wrong {
+    animation: shake .4s ease;
+    background: #dc2626;
+    color: #fff;
+  }
+
+  .cell.done {
+    background: #065f46;
+    color: #6ee7b7;
+    cursor: default;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+
+  .btn-row {
+    padding: 20px 16px 40px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .action-btn {
+    padding: 14px 40px;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .1s, box-shadow .2s;
+  }
+
+  .action-btn:active { transform: scale(0.95); }
+
+  .btn-start {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(59,130,246,.35);
+  }
+
+  .btn-reset {
+    background: #334155;
+    color: #94a3b8;
+  }
+
+  .btn-reset:hover { background: #475569; color: #e2e8f0; }
+
+  /* 完成弹窗 */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.65);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .overlay.show { display: flex; }
+
+  .modal {
+    background: #1e293b;
+    border-radius: 20px;
+    padding: 36px 32px;
+    text-align: center;
+    width: 90%;
+    max-width: 360px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.5);
+    animation: fadeUp .4s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .modal h2 {
+    font-size: 24px;
+    margin-bottom: 8px;
+    color: #34d399;
+  }
+
+  .modal .result-time {
+    font-size: 48px;
+    font-weight: 800;
+    color: #fbbf24;
+    margin: 12px 0;
+  }
+
+  .modal .result-unit { font-size: 16px; color: #94a3b8; }
+
+  .modal .new-record {
+    display: inline-block;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+    animation: pop .5s ease;
+  }
+
+  .modal .rating {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 8px 0 4px;
+  }
+
+  .modal .rating-text {
+    font-size: 14px;
+    color: #94a3b8;
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+
+  .modal .percent-bar-wrap {
+    margin: 0 auto 8px;
+    max-width: 260px;
+  }
+
+  .modal .percent-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+
+  .modal .percent-bar {
+    height: 10px;
+    background: #334155;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+
+  .modal .percent-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 1s ease;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+  }
+
+  .modal .percent-value {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 8px 0;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .modal .percent-desc {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 16px;
+  }
+
+  .modal .best-info {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 20px;
+  }
+
+  .modal .action-btn { width: 100%; margin-top: 6px; }
+
+  /* 响应式 */
+  @media (max-width: 420px) {
+    .header h1 { font-size: 22px; }
+    .cell { font-size: 20px; border-radius: 8px; }
+    .grid { gap: 4px; }
+    .info-value { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>舒尔特方格</h1>
+  <p>按数字顺序依次点击，训练注意力</p>
+</div>
+
+<div class="controls" id="sizeControls">
+  <button class="size-btn" data-size="3">3×3</button>
+  <button class="size-btn" data-size="4">4×4</button>
+  <button class="size-btn active" data-size="5">5×5</button>
+  <button class="size-btn" data-size="6">6×6</button>
+  <button class="size-btn" data-size="7">7×7</button>
+</div>
+
+<div class="info-bar">
+  <div class="info-item">
+    <div class="info-label">用时</div>
+    <div class="info-value time" id="timer">0.00</div>
+  </div>
+  <div class="info-item">
+    <div class="info-label">下一个</div>
+    <div class="info-value next" id="nextNum">1</div>
+  </div>
+  <div class="info-item">
+    <div class="info-label">最佳</div>
+    <div class="info-value best" id="bestTime">--</div>
+  </div>
+</div>
+
+<div class="grid-wrapper">
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="btn-row">
+  <button class="action-btn btn-start" id="startBtn">开始</button>
+  <button class="action-btn btn-reset" id="resetBtn">重置</button>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2>完成!</h2>
+    <div id="newRecordBadge" class="new-record" style="display:none">新纪录</div>
+    <div class="result-time" id="resultTime">0.00</div>
+    <div class="result-unit">秒</div>
+    <div class="rating" id="ratingLevel"></div>
+    <div class="rating-text" id="ratingText"></div>
+    <div class="percent-bar-wrap">
+      <div class="percent-label"><span>0%</span><span>100%</span></div>
+      <div class="percent-bar"><div class="percent-fill" id="percentFill" style="width:0%"></div></div>
+    </div>
+    <div class="percent-value" id="percentValue">0%</div>
+    <div class="percent-desc">超过了所有人中的</div>
+    <div class="best-info" id="bestInfo">历史最佳：--</div>
+    <button class="action-btn btn-start" id="againBtn">再来一局</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  let size = 5;
+  let numbers = [];
+  let nextTarget = 1;
+  let total = 25;
+  let started = false;
+  let startTime = 0;
+  let timerInterval = null;
+  let wrongCount = 0;
+
+  const grid = document.getElementById('grid');
+  const timerEl = document.getElementById('timer');
+  const nextNumEl = document.getElementById('nextNum');
+  const bestTimeEl = document.getElementById('bestTime');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const overlay = document.getElementById('overlay');
+  const resultTimeEl = document.getElementById('resultTime');
+  const newRecordBadge = document.getElementById('newRecordBadge');
+  const bestInfoEl = document.getElementById('bestInfo');
+  const againBtn = document.getElementById('againBtn');
+  const sizeControls = document.getElementById('sizeControls');
+  const ratingLevelEl = document.getElementById('ratingLevel');
+  const ratingTextEl = document.getElementById('ratingText');
+  const percentFillEl = document.getElementById('percentFill');
+  const percentValueEl = document.getElementById('percentValue');
+
+  function getBestKey() { return 'schulte_best_' + size; }
+
+  function getBest() {
+    const v = localStorage.getItem(getBestKey());
+    return v ? parseFloat(v) : null;
+  }
+
+  function setBest(t) {
+    localStorage.setItem(getBestKey(), t.toFixed(2));
+  }
+
+  function updateBestDisplay() {
+    const b = getBest();
+    bestTimeEl.textContent = b !== null ? b.toFixed(2) : '--';
+  }
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function buildGrid() {
+    total = size * size;
+    numbers = shuffle(Array.from({ length: total }, (_, i) => i + 1));
+    nextTarget = 1;
+    started = false;
+    wrongCount = 0;
+    clearInterval(timerInterval);
+    timerEl.textContent = '0.00';
+    nextNumEl.textContent = '1';
+    startBtn.textContent = '开始';
+
+    grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+    grid.innerHTML = '';
+
+    numbers.forEach((num, idx) => {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.textContent = num;
+      cell.dataset.num = num;
+
+      // 根据格子数量调整字号
+      const fontSize = size <= 4 ? 28 : size <= 5 ? 24 : size <= 6 ? 20 : 18;
+      cell.style.fontSize = fontSize + 'px';
+
+      cell.addEventListener('click', () => handleClick(cell, num));
+      grid.appendChild(cell);
+    });
+
+    updateBestDisplay();
+  }
+
+  function handleClick(cell, num) {
+    if (!started) {
+      started = true;
+      startTime = performance.now();
+      timerInterval = setInterval(updateTimer, 50);
+      startBtn.textContent = '进行中...';
+    }
+
+    if (cell.classList.contains('correct') || cell.classList.contains('done')) return;
+
+    if (num === nextTarget) {
+      cell.classList.add('correct');
+      setTimeout(() => {
+        cell.classList.remove('correct');
+        cell.classList.add('done');
+      }, 300);
+      nextTarget++;
+      nextNumEl.textContent = nextTarget <= total ? nextTarget : '-';
+
+      if (nextTarget > total) {
+        finishGame();
+      }
+    } else {
+      wrongCount++;
+      cell.classList.add('wrong');
+      setTimeout(() => cell.classList.remove('wrong'), 400);
+    }
+  }
+
+  function updateTimer() {
+    const elapsed = (performance.now() - startTime) / 1000;
+    timerEl.textContent = elapsed.toFixed(2);
+  }
+
+  // 不同尺寸的参考平均用时(秒)和标准差，用于估算百分位
+  // 基于舒尔特方格的一般人群数据拟合
+  const sizeStats = {
+    3: { mean: 8,   sd: 3   },
+    4: { mean: 18,  sd: 6   },
+    5: { mean: 30,  sd: 10  },
+    6: { mean: 50,  sd: 15  },
+    7: { mean: 75,  sd: 20  },
+  };
+
+  // 正态分布累积概率(近似)
+  function normalCDF(x) {
+    const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
+    const a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+    const sign = x < 0 ? -1 : 1;
+    x = Math.abs(x) / Math.SQRT2;
+    const t = 1.0 / (1.0 + p * x);
+    const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+    return 0.5 * (1.0 + sign * y);
+  }
+
+  function getPercentile(elapsed) {
+    const stats = sizeStats[size];
+    if (!stats) return 50;
+    const z = (stats.mean - elapsed) / stats.sd;
+    return Math.round(normalCDF(z) * 100);
+  }
+
+  function getRating(percentile) {
+    if (percentile >= 99) return { level: '超级天才', emoji: '🏆', color: '#fbbf24', text: '你的专注力已经超越了几乎所有人！大脑如同精密雷达，令人叹为观止。' };
+    if (percentile >= 95) return { level: '天才级', emoji: '🌟', color: '#f59e0b', text: '顶级注意力水平！你的反应速度和专注力远超常人。' };
+    if (percentile >= 85) return { level: '卓越', emoji: '🔥', color: '#f97316', text: '非常出色的表现！你的注意力集中能力令人印象深刻。' };
+    if (percentile >= 70) return { level: '优秀', emoji: '💪', color: '#ef4444', text: '优秀的专注力！反应敏捷，注意力非常集中。' };
+    if (percentile >= 50) return { level: '良好', emoji: '👍', color: '#3b82f6', text: '表现不错！你的注意力处于中上水平，继续练习会更好。' };
+    if (percentile >= 30) return { level: '一般', emoji: '😊', color: '#8b5cf6', text: '表现中等，还有提升空间。坚持训练，注意力会显著提高。' };
+    if (percentile >= 15) return { level: '需要练习', emoji: '🌱', color: '#64748b', text: '别气馁，每个人都是从这里开始的。多加练习一定会有进步！' };
+    return { level: '继续加油', emoji: '💪', color: '#64748b', text: '万事开头难！每一次练习都在锻炼你的大脑，坚持下去就会看到变化。' };
+  }
+
+  function finishGame() {
+    clearInterval(timerInterval);
+    const elapsed = (performance.now() - startTime) / 1000;
+    timerEl.textContent = elapsed.toFixed(2);
+
+    const best = getBest();
+    let isNewRecord = false;
+    if (best === null || elapsed < best) {
+      setBest(elapsed);
+      isNewRecord = true;
+    }
+    updateBestDisplay();
+
+    // 评价与百分位
+    const percentile = getPercentile(elapsed);
+    const rating = getRating(percentile);
+
+    resultTimeEl.textContent = elapsed.toFixed(2);
+    newRecordBadge.style.display = isNewRecord ? 'inline-block' : 'none';
+
+    ratingLevelEl.textContent = rating.emoji + ' ' + rating.level;
+    ratingLevelEl.style.color = rating.color;
+    ratingTextEl.textContent = rating.text;
+
+    percentValueEl.textContent = percentile + '%';
+    // 延迟设置宽度以触发动画
+    setTimeout(() => {
+      percentFillEl.style.width = percentile + '%';
+    }, 100);
+
+    const currentBest = getBest();
+    bestInfoEl.textContent = '历史最佳：' + (currentBest !== null ? currentBest.toFixed(2) + ' 秒' : '--');
+    overlay.classList.add('show');
+  }
+
+  function resetGame() {
+    overlay.classList.remove('show');
+    percentFillEl.style.width = '0%';
+    buildGrid();
+  }
+
+  // 尺寸选择
+  sizeControls.addEventListener('click', (e) => {
+    const btn = e.target.closest('.size-btn');
+    if (!btn) return;
+    sizeControls.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    size = parseInt(btn.dataset.size);
+    resetGame();
+  });
+
+  startBtn.addEventListener('click', () => {
+    if (!started) {
+      // 自动点第一个格子
+      const firstCell = grid.querySelector(`[data-num="1"]`);
+      if (firstCell) firstCell.click();
+    }
+  });
+
+  resetBtn.addEventListener('click', resetGame);
+  againBtn.addEventListener('click', resetGame);
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) resetGame();
+  });
+
+  // 初始化
+  buildGrid();
+})();
+</script>
+<script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+        ga('create', 'UA-55383282-4', 'auto');
+        ga('send', 'pageview');
+    </script>
+</body>
+</html>
