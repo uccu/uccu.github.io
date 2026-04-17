@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数独游戏</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    color: #e0e0e0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    user-select: none;
+  }
+
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: 4px;
+    background: linear-gradient(90deg, #a18cd1, #fbc2eb);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+
+  .toolbar button, .toolbar select {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .toolbar select {
+    background: #3a3568;
+    color: #e0e0e0;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 30px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e0e0e0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+
+  .toolbar button {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    font-weight: 600;
+  }
+  .toolbar button:hover { opacity: .85; transform: translateY(-1px); }
+  .toolbar button:active { transform: translateY(0); }
+
+  .toolbar button.secondary {
+    background: #3a3568;
+    color: #c0c0c0;
+    font-weight: 400;
+  }
+
+  .info-bar {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 12px;
+    font-size: 1rem;
+    color: #b0aed0;
+  }
+  .info-bar span { display: flex; align-items: center; gap: 6px; }
+
+  /* Board */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 0;
+    border: 3px solid #a18cd1;
+    border-radius: 10px;
+    overflow: hidden;
+    width: min(90vw, 460px);
+    height: min(90vw, 460px);
+    background: #1a1740;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45);
+  }
+
+  .cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(1rem, 4vw, 1.6rem);
+    font-weight: 500;
+    background: #1e1b42;
+    color: #ddd;
+    cursor: pointer;
+    position: relative;
+    transition: background .15s;
+    border: 1px solid #2e2a56;
+    aspect-ratio: 1;
+  }
+
+  /* Thicker borders for 3×3 boxes */
+  .cell.br3 { border-right: 2.5px solid #a18cd1; }
+  .cell.bb3 { border-bottom: 2.5px solid #a18cd1; }
+
+  .cell.given {
+    color: #e8e4f5;
+    font-weight: 700;
+    background: #262252;
+  }
+
+  .cell.selected {
+    background: #3d3580 !important;
+    box-shadow: inset 0 0 0 2px #a18cd1;
+    z-index: 1;
+  }
+
+  .cell.highlight {
+    background: #2a2660;
+  }
+
+  .cell.same-number {
+    background: #35307a;
+  }
+
+  .cell.conflict {
+    color: #ff6b6b !important;
+  }
+
+  .cell.user {
+    color: #82b1ff;
+  }
+
+  /* Number pad */
+  .numpad {
+    display: flex;
+    gap: 6px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .numpad button {
+    width: 46px; height: 46px;
+    border-radius: 10px;
+    border: none;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    background: #2e2a56;
+    color: #c8c4e8;
+  }
+  .numpad button:hover { background: #4a44a0; color: #fff; }
+  .numpad button.erase {
+    width: auto;
+    padding: 0 16px;
+    font-size: .95rem;
+    font-weight: 400;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: #2a265a;
+    padding: 36px 44px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  }
+  .modal h2 { font-size: 1.6rem; margin-bottom: 10px; color: #fbc2eb; }
+  .modal p { margin-bottom: 20px; color: #b0aed0; }
+  .modal button {
+    padding: 10px 28px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  @media (max-width: 480px) {
+    h1 { font-size: 1.5rem; }
+    .numpad button { width: 38px; height: 38px; font-size: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<h1>数 独</h1>
+
+<div class="toolbar">
+  <select id="difficulty">
+    <option value="easy">简单</option>
+    <option value="medium" selected>中等</option>
+    <option value="hard">困难</option>
+  </select>
+  <button id="btnNew">新游戏</button>
+  <button id="btnReset" class="secondary">重置</button>
+  <button id="btnCheck" class="secondary">检查</button>
+</div>
+
+<div class="info-bar">
+  <span>⏱ <b id="timer">00:00</b></span>
+  <span>❌ 错误: <b id="mistakes">0</b></span>
+</div>
+
+<div class="board" id="board"></div>
+
+<div class="numpad" id="numpad"></div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modalTitle">🎉 恭喜！</h2>
+    <p id="modalMsg">你完成了数独！</p>
+    <button id="modalBtn">再来一局</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  /* ===================== Sudoku Engine ===================== */
+
+  // Generate a full solved board using backtracking with shuffled candidates
+  function generateSolution() {
+    const board = Array.from({ length: 9 }, () => Array(9).fill(0));
+
+    function isValid(board, r, c, num) {
+      for (let i = 0; i < 9; i++) {
+        if (board[r][i] === num) return false;
+        if (board[i][c] === num) return false;
+      }
+      const br = Math.floor(r / 3) * 3;
+      const bc = Math.floor(c / 3) * 3;
+      for (let i = br; i < br + 3; i++)
+        for (let j = bc; j < bc + 3; j++)
+          if (board[i][j] === num) return false;
+      return true;
+    }
+
+    function solve(board) {
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (board[r][c] === 0) {
+            const nums = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+            for (const n of nums) {
+              if (isValid(board, r, c, n)) {
+                board[r][c] = n;
+                if (solve(board)) return true;
+                board[r][c] = 0;
+              }
+            }
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    solve(board);
+    return board;
+  }
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  // Remove cells according to difficulty
+  function makePuzzle(solution, difficulty) {
+    const blanks = { easy: 36, medium: 46, hard: 62 };
+    const count = blanks[difficulty] || 46;
+    const puzzle = solution.map(r => [...r]);
+    const positions = shuffle(
+      Array.from({ length: 81 }, (_, i) => [Math.floor(i / 9), i % 9])
+    );
+    let removed = 0;
+    for (const [r, c] of positions) {
+      if (removed >= count) break;
+      puzzle[r][c] = 0;
+      removed++;
+    }
+    return puzzle;
+  }
+
+  /* ===================== Game State ===================== */
+
+  let solution = [];
+  let puzzle = [];        // original puzzle (immutable during game)
+  let board = [];         // current player board
+  let selectedCell = null; // { r, c }
+  let timerInterval = null;
+  let seconds = 0;
+  let mistakes = 0;
+  let finished = false;
+
+  const boardEl = document.getElementById('board');
+  const numpadEl = document.getElementById('numpad');
+  const timerEl = document.getElementById('timer');
+  const mistakesEl = document.getElementById('mistakes');
+  const difficultyEl = document.getElementById('difficulty');
+  const modalOverlay = document.getElementById('modal');
+
+  /* ===================== Init ===================== */
+
+  function newGame() {
+    finished = false;
+    mistakes = 0;
+    mistakesEl.textContent = '0';
+    selectedCell = null;
+    solution = generateSolution();
+    puzzle = makePuzzle(solution, difficultyEl.value);
+    board = puzzle.map(r => [...r]);
+    resetTimer();
+    startTimer();
+    renderBoard();
+  }
+
+  function resetGame() {
+    if (finished) return;
+    board = puzzle.map(r => [...r]);
+    selectedCell = null;
+    renderBoard();
+  }
+
+  /* ===================== Rendering ===================== */
+
+  function renderBoard() {
+    boardEl.innerHTML = '';
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+
+        // box borders
+        if (c % 3 === 2 && c !== 8) cell.classList.add('br3');
+        if (r % 3 === 2 && r !== 8) cell.classList.add('bb3');
+
+        const val = board[r][c];
+        if (puzzle[r][c] !== 0) {
+          cell.classList.add('given');
+          cell.textContent = val;
+        } else if (val !== 0) {
+          cell.classList.add('user');
+          cell.textContent = val;
+          // check conflict
+          if (val !== solution[r][c]) {
+            cell.classList.add('conflict');
+          }
+        }
+
+        // highlight
+        if (selectedCell) {
+          if (selectedCell.r === r && selectedCell.c === c) {
+            cell.classList.add('selected');
+          } else if (selectedCell.r === r || selectedCell.c === c ||
+            (Math.floor(selectedCell.r / 3) === Math.floor(r / 3) &&
+             Math.floor(selectedCell.c / 3) === Math.floor(c / 3))) {
+            cell.classList.add('highlight');
+          }
+          // same number highlight
+          const selVal = board[selectedCell.r][selectedCell.c];
+          if (selVal !== 0 && val === selVal && !(selectedCell.r === r && selectedCell.c === c)) {
+            cell.classList.add('same-number');
+          }
+        }
+
+        cell.addEventListener('click', () => selectCell(r, c));
+        boardEl.appendChild(cell);
+      }
+    }
+  }
+
+  function selectCell(r, c) {
+    if (finished) return;
+    selectedCell = { r, c };
+    renderBoard();
+  }
+
+  /* ===================== Input ===================== */
+
+  function inputNumber(num) {
+    if (!selectedCell || finished) return;
+    const { r, c } = selectedCell;
+    if (puzzle[r][c] !== 0) return; // given cell
+
+    if (num === 0) {
+      board[r][c] = 0;
+    } else {
+      board[r][c] = num;
+      if (num !== solution[r][c]) {
+        mistakes++;
+        mistakesEl.textContent = mistakes;
+      }
+    }
+
+    renderBoard();
+    checkWin();
+  }
+
+  function checkWin() {
+    for (let r = 0; r < 9; r++)
+      for (let c = 0; c < 9; c++)
+        if (board[r][c] !== solution[r][c]) return;
+    // win!
+    finished = true;
+    stopTimer();
+    showModal('🎉 恭喜通关！', `用时 ${timerEl.textContent}，错误 ${mistakes} 次`);
+  }
+
+  function checkBoard() {
+    if (finished) return;
+    let allCorrect = true;
+    let hasEmpty = false;
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        if (board[r][c] === 0) { hasEmpty = true; continue; }
+        if (board[r][c] !== solution[r][c]) { allCorrect = false; }
+      }
+    }
+    if (hasEmpty) {
+      showModal('🔍 检查结果', allCorrect ? '目前填写全部正确，继续加油！' : '存在错误，红色数字即为错误位置。');
+    } else {
+      if (allCorrect) {
+        checkWin();
+      } else {
+        showModal('🔍 检查结果', '存在错误，红色数字即为错误位置。');
+      }
+    }
+  }
+
+  /* ===================== Timer ===================== */
+
+  function startTimer() {
+    stopTimer();
+    seconds = 0;
+    timerEl.textContent = '00:00';
+    timerInterval = setInterval(() => {
+      seconds++;
+      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const s = String(seconds % 60).padStart(2, '0');
+      timerEl.textContent = `${m}:${s}`;
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  }
+
+  function resetTimer() {
+    stopTimer();
+    seconds = 0;
+    timerEl.textContent = '00:00';
+  }
+
+  /* ===================== Modal ===================== */
+
+  function showModal(title, msg) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMsg').textContent = msg;
+    modalOverlay.classList.add('show');
+  }
+
+  document.getElementById('modalBtn').addEventListener('click', () => {
+    modalOverlay.classList.remove('show');
+    if (finished) newGame();
+  });
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) modalOverlay.classList.remove('show');
+  });
+
+  /* ===================== Numpad ===================== */
+
+  for (let n = 1; n <= 9; n++) {
+    const btn = document.createElement('button');
+    btn.textContent = n;
+    btn.addEventListener('click', () => inputNumber(n));
+    numpadEl.appendChild(btn);
+  }
+  const eraseBtn = document.createElement('button');
+  eraseBtn.textContent = '擦除';
+  eraseBtn.className = 'erase';
+  eraseBtn.addEventListener('click', () => inputNumber(0));
+  numpadEl.appendChild(eraseBtn);
+
+  /* ===================== Keyboard ===================== */
+
+  document.addEventListener('keydown', (e) => {
+    if (finished) return;
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= 9) {
+      inputNumber(num);
+    } else if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') {
+      inputNumber(0);
+    } else if (e.key === 'ArrowUp' && selectedCell) {
+      selectedCell.r = (selectedCell.r + 8) % 9; renderBoard();
+    } else if (e.key === 'ArrowDown' && selectedCell) {
+      selectedCell.r = (selectedCell.r + 1) % 9; renderBoard();
+    } else if (e.key === 'ArrowLeft' && selectedCell) {
+      selectedCell.c = (selectedCell.c + 8) % 9; renderBoard();
+    } else if (e.key === 'ArrowRight' && selectedCell) {
+      selectedCell.c = (selectedCell.c + 1) % 9; renderBoard();
+    }
+  });
+
+  /* ===================== Buttons ===================== */
+
+  document.getElementById('btnNew').addEventListener('click', newGame);
+  document.getElementById('btnReset').addEventListener('click', resetGame);
+  document.getElementById('btnCheck').addEventListener('click', checkBoard);
+
+  /* ===================== Start ===================== */
+
+  newGame();
+})();
+</script>
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-55383282-4', 'auto');
+    ga('send', 'pageview');
+</script>
+</body>
+</html>
