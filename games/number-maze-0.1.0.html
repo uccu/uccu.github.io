@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数字迷雾</title>
+<style>
+  @import url('https://fonts.loli.net/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #0a0e1a;
+    font-family: 'Orbitron', sans-serif;
+    overflow: hidden;
+    color: #e0e0e0;
+  }
+
+  .bg-particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+  #app {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+  }
+
+  h1.title {
+    font-size: 2.4rem; font-weight: 900;
+    background: linear-gradient(135deg, #00f0ff, #7b2ff7, #ff2d95);
+    background-size: 200% 200%;
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+    animation: gradientShift 3s ease infinite;
+    letter-spacing: 4px; margin-bottom: 4px;
+  }
+
+  @keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .info-bar {
+    display: flex; justify-content: center; align-items: center;
+    gap: 32px; font-size: 1rem; font-weight: 700; color: #a0b4d0;
+  }
+  .info-bar span { display: flex; align-items: center; gap: 6px; }
+  .info-bar .label { color: #607090; font-size: 0.85rem; }
+  .info-bar .value { color: #00f0ff; font-size: 1.2rem; }
+  .info-bar .timer.danger .value { color: #ff2d55; animation: pulse 0.5s infinite; }
+
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .grid-wrapper {
+    position: relative; padding: 12px; border-radius: 20px;
+    background: rgba(20, 28, 50, 0.8);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    box-shadow: 0 0 40px rgba(0, 240, 255, 0.08), inset 0 0 40px rgba(0, 0, 0, 0.3);
+  }
+
+  .line-canvas {
+    position: absolute; top: 12px; left: 12px;
+    pointer-events: none; z-index: 2;
+  }
+  .line-canvas line {
+    stroke: rgba(0, 240, 255, 0.5); stroke-width: 3;
+    stroke-linecap: round; filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.6));
+  }
+
+  .grid { display: grid; gap: 6px; position: relative; z-index: 3; }
+
+  .cell {
+    display: flex; justify-content: center; align-items: center;
+    font-weight: 700; border-radius: 14px; cursor: pointer;
+    transition: all 0.2s ease; position: relative;
+    user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+
+  .cell.visible {
+    background: rgba(30, 44, 80, 0.7);
+    border: 1px solid rgba(0, 240, 255, 0.2); color: #c0d8f0;
+  }
+  .cell.visible:hover {
+    background: rgba(40, 60, 110, 0.9);
+    border-color: rgba(0, 240, 255, 0.5);
+    transform: scale(1.08); box-shadow: 0 0 18px rgba(0, 240, 255, 0.3);
+  }
+
+  .cell.hidden {
+    background: rgba(20, 25, 45, 0.9);
+    border: 1px solid rgba(80, 80, 120, 0.2); color: transparent; cursor: pointer;
+  }
+  .cell.hidden::after { content: '?'; color: rgba(100, 120, 160, 0.4); }
+  .cell.hidden:hover {
+    background: rgba(30, 35, 60, 0.9);
+    border-color: rgba(100, 120, 200, 0.3); transform: scale(1.05);
+  }
+
+  .cell.found {
+    background: linear-gradient(135deg, rgba(0, 200, 255, 0.25), rgba(123, 47, 247, 0.25));
+    border: 1px solid rgba(0, 240, 255, 0.5); color: #00f0ff;
+    cursor: default; animation: cellFound 0.4s ease;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+  }
+  @keyframes cellFound { 0%{transform:scale(1.3)} 50%{transform:scale(.95)} 100%{transform:scale(1)} }
+
+  .cell.wrong {
+    animation: shake 0.5s ease;
+    background: rgba(255, 40, 80, 0.35) !important;
+    border-color: #ff2d55 !important; color: #ff2d55 !important;
+  }
+  .cell.wrong::after { color: #ff2d55 !important; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)}
+    40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)}
+  }
+
+  .overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    background: rgba(5, 8, 18, 0.92); backdrop-filter: blur(10px);
+    gap: 24px; opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+  }
+  .overlay.active { opacity: 1; pointer-events: auto; }
+  .overlay h2 { font-size: 2rem; font-weight: 900; letter-spacing: 3px; }
+  .overlay .sub {
+    font-size: 1rem; color: #607090; max-width: 400px;
+    text-align: center; line-height: 1.6; font-family: system-ui, sans-serif;
+  }
+
+  .btn {
+    padding: 14px 48px; font-family: 'Orbitron', sans-serif;
+    font-size: 1rem; font-weight: 700; border: none; border-radius: 50px;
+    cursor: pointer; transition: all 0.3s ease; letter-spacing: 2px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #00c8ff, #7b2ff7); color: #fff;
+    box-shadow: 0 4px 25px rgba(0, 200, 255, 0.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 35px rgba(0, 200, 255, 0.5); }
+  .btn-danger {
+    background: linear-gradient(135deg, #ff2d55, #ff6b2d); color: #fff;
+    box-shadow: 0 4px 25px rgba(255, 45, 85, 0.3);
+  }
+  .btn-sm { padding: 10px 28px; font-size: 0.85rem; }
+
+  .level-display {
+    font-size: 5rem; font-weight: 900;
+    background: linear-gradient(135deg, #00f0ff, #7b2ff7);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+  }
+
+  .fail-icon { font-size: 4rem; animation: failPulse 1s ease infinite; }
+  @keyframes failPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.1);opacity:.7} }
+
+  .victory-title {
+    font-size: 2.8rem; font-weight: 900;
+    background: linear-gradient(135deg, #ffd700, #ff2d95, #00f0ff, #7b2ff7);
+    background-size: 300% 300%;
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+    animation: gradientShift 2s ease infinite;
+  }
+
+  .fireworks-canvas { position: fixed; inset: 0; z-index: 99; pointer-events: none; }
+
+  .level-progress { display: flex; gap: 8px; align-items: center; }
+  .level-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: rgba(60, 80, 120, 0.5); transition: all 0.3s ease;
+  }
+  .level-dot.completed { background: #00f0ff; box-shadow: 0 0 8px rgba(0, 240, 255, 0.5); }
+  .level-dot.current { background: #7b2ff7; box-shadow: 0 0 10px rgba(123, 47, 247, 0.6); transform: scale(1.3); }
+
+  .ripple {
+    position: absolute; border-radius: 50%;
+    background: rgba(0, 240, 255, 0.3); transform: scale(0);
+    animation: rippleAnim 0.6s ease-out; pointer-events: none;
+  }
+  @keyframes rippleAnim { to { transform: scale(3); opacity: 0; } }
+
+  .mode-selector { display: flex; gap: 12px; margin: 8px 0; }
+  .mode-btn {
+    padding: 12px 20px; border-radius: 14px; border: 2px solid rgba(0, 240, 255, 0.15);
+    background: rgba(30, 44, 80, 0.5); color: #a0b4d0; cursor: pointer;
+    font-family: 'Orbitron', sans-serif; font-size: 0.9rem; font-weight: 700;
+    transition: all 0.25s ease; text-align: center; min-width: 90px;
+  }
+  .mode-btn:hover, .mode-btn.active {
+    border-color: #00f0ff; color: #00f0ff;
+    background: rgba(0, 240, 255, 0.1); box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+  }
+  .mode-btn .mode-label { font-size: 0.7rem; color: #607090; margin-top: 2px; }
+  .mode-btn:hover .mode-label, .mode-btn.active .mode-label { color: #7b9fc0; }
+
+  .level-select { margin-top: 8px; }
+  .level-grid { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .level-btn {
+    width: 48px; height: 48px; border-radius: 12px;
+    border: 1px solid rgba(0, 240, 255, 0.2); background: rgba(30, 44, 80, 0.6);
+    color: #a0b4d0; font-family: 'Orbitron', sans-serif;
+    font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease;
+  }
+  .level-btn:hover {
+    background: rgba(40, 60, 110, 0.9); border-color: rgba(0, 240, 255, 0.5);
+    color: #00f0ff; transform: scale(1.1); box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+  }
+</style>
+</head>
+<body>
+
+<canvas class="bg-particles" id="bgCanvas"></canvas>
+<canvas class="fireworks-canvas" id="fireworksCanvas"></canvas>
+
+<div id="app">
+  <div class="overlay active" id="startScreen">
+    <h1 class="title">数字迷雾</h1>
+    <p class="sub">在迷雾中找到隐藏的数字序列<br>按顺序依次点击所有数字，揭开迷雾</p>
+    <div class="mode-selector" id="modeSelector">
+      <div class="mode-btn" data-mode="3" onclick="selectMode(3)">3×3<div class="mode-label">入门</div></div>
+      <div class="mode-btn active" data-mode="5" onclick="selectMode(5)">5×5<div class="mode-label">标准</div></div>
+      <div class="mode-btn" data-mode="8" onclick="selectMode(8)">8×8<div class="mode-label">专家</div></div>
+    </div>
+    <button class="btn btn-primary" onclick="startGame()">从 第 1 关 开 始</button>
+    <div class="level-select">
+      <p class="sub" style="margin-bottom:4px;">选择关卡</p>
+      <div class="level-grid" id="levelSelect"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="levelScreen">
+    <div class="level-display" id="levelNum"></div>
+    <h2 id="levelTitle" style="color:#a0b4d0;"></h2>
+    <div class="level-progress" id="levelProgress"></div>
+    <p class="sub" id="levelDesc"></p>
+    <button class="btn btn-primary" onclick="beginLevel()">开 始</button>
+  </div>
+
+  <div class="overlay" id="failScreen">
+    <div class="fail-icon">💥</div>
+    <h2 style="color:#ff2d55;">挑 战 失 败</h2>
+    <p class="sub" id="failMsg"></p>
+    <div style="display:flex;gap:16px;">
+      <button class="btn btn-primary btn-sm" onclick="retryLevel()">重新挑战</button>
+      <button class="btn btn-danger btn-sm" onclick="backToStart()">返回首页</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="victoryScreen">
+    <div class="victory-title">🎉 通 关 成 功 🎉</div>
+    <h2 style="color:#ffd700;">你是数字迷雾大师！</h2>
+    <p class="sub" id="victoryMsg">穿越迷雾，揭开所有数字的真相<br>你的洞察力无与伦比！</p>
+    <button class="btn btn-primary" onclick="backToStart()">再 来 一 次</button>
+  </div>
+
+  <div id="gameArea" style="display:none;">
+    <h1 class="title" style="font-size:1.8rem;">数字迷雾</h1>
+    <div class="info-bar">
+      <span><span class="label">关卡</span><span class="value" id="infoLevel">1</span></span>
+      <span class="timer" id="timerWrap"><span class="label">时间</span><span class="value" id="infoTimer">60</span></span>
+      <span><span class="label">下一个</span><span class="value" id="infoNext">1</span></span>
+    </div>
+    <div class="level-progress" id="gameProgress" style="margin-bottom:4px;"></div>
+    <div class="grid-wrapper">
+      <svg class="line-canvas" id="lineCanvas"></svg>
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ MODE / LEVEL CONFIG ============
+const MODES = {
+  3: {
+    label: '3×3 入门', cellSize: 90, fontSize: '1.6rem', qSize: '1.8rem',
+    levels: [
+      { name: '薄雾初现', hidden: 2, time: 30,  hideNext: false },
+      { name: '迷雾渐浓', hidden: 4, time: 25,  hideNext: false },
+      { name: '终极迷雾', hidden: 5, time: 20,  hideNext: true  },
+    ]
+  },
+  5: {
+    label: '5×5 标准', cellSize: 72, fontSize: '1.3rem', qSize: '1.5rem',
+    levels: [
+      { name: '薄雾初现', hidden: 4,  time: 120, hideNext: false },
+      { name: '迷雾渐浓', hidden: 7,  time: 80,  hideNext: false },
+      { name: '暗影重重', hidden: 9,  time: 60,  hideNext: false },
+      { name: '混沌迷局', hidden: 11, time: 50,  hideNext: true  },
+      { name: '终极迷雾', hidden: 11, time: 35,  hideNext: true  },
+    ]
+  },
+  8: {
+    label: '8×8 专家', cellSize: 48, fontSize: '0.9rem', qSize: '1.1rem',
+    levels: [
+      { name: '薄雾初现', hidden: 12, time: 180, hideNext: false },
+      { name: '迷雾渐浓', hidden: 20, time: 150, hideNext: false },
+      { name: '暗影重重', hidden: 28, time: 120, hideNext: false },
+      { name: '混沌迷局', hidden: 35, time: 100, hideNext: false },
+      { name: '终极迷雾', hidden: 40, time: 80,  hideNext: true  },
+    ]
+  }
+};
+
+let SIZE = 5;
+let TOTAL = 25;
+let currentMode = 5;
+let LEVELS = MODES[5].levels;
+let currentLevel = 0;
+let board = [];
+let posOf = {};
+let hiddenSet = new Set();
+let nextNum = 1;
+let timer = 0;
+let timerInterval = null;
+let gameActive = false;
+
+const $ = id => document.getElementById(id);
+
+// ============ MODE SELECTION ============
+function selectMode(size) {
+  currentMode = size;
+  SIZE = size;
+  TOTAL = SIZE * SIZE;
+  LEVELS = MODES[size].levels;
+  currentLevel = 0;
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.mode) === size);
+  });
+  renderLevelSelect();
+}
+
+// ============ BOARD GENERATION ============
+function generateBoard() {
+  const grid = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
+  const visited = Array.from({length: SIZE}, () => Array(SIZE).fill(false));
+  const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+  let steps = 0;
+  const MAX_STEPS = SIZE <= 5 ? 10000 : 50000;
+
+  function degree(r, c) {
+    let cnt = 0;
+    for (const [dr, dc] of dirs) {
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && !visited[nr][nc]) cnt++;
+    }
+    return cnt;
+  }
+
+  function dfs(r, c, num) {
+    if (++steps > MAX_STEPS) return false;
+    grid[r][c] = num;
+    visited[r][c] = true;
+    if (num === TOTAL) return true;
+
+    const neighbors = [];
+    for (const [dr, dc] of dirs) {
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && !visited[nr][nc]) {
+        neighbors.push({r: nr, c: nc, deg: degree(nr, nc), rnd: Math.random()});
+      }
+    }
+    neighbors.sort((a, b) => a.deg - b.deg || a.rnd - b.rnd);
+
+    for (const nb of neighbors) {
+      if (dfs(nb.r, nb.c, num + 1)) return true;
+      if (steps > MAX_STEPS) break;
+    }
+    grid[r][c] = 0;
+    visited[r][c] = false;
+    return false;
+  }
+
+  let success = false;
+  for (let attempt = 0; attempt < 200 && !success; attempt++) {
+    const startR = Math.floor(Math.random() * SIZE);
+    const startC = Math.floor(Math.random() * SIZE);
+    for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
+      grid[r][c] = 0; visited[r][c] = false;
+    }
+    steps = 0;
+    success = dfs(startR, startC, 1);
+  }
+  return grid;
+}
+
+// ============ SOLVABILITY & HIDDEN SELECTION ============
+function computeMaxHidden(targetCount) {
+  const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+
+  function isAdj(r1, c1, r2, c2) {
+    return Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1 && !(r1 === r2 && c1 === c2);
+  }
+
+  function isSolvable(hs) {
+    for (let n = 1; n < TOTAL; n++) {
+      const next = n + 1;
+      if (!hs.has(next)) continue;
+      const {r, c} = posOf[n];
+      let cands = [];
+      for (const [dr, dc] of dirs) {
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) continue;
+        const m = board[nr][nc];
+        if (m > n && hs.has(m)) cands.push({r: nr, c: nc, val: m});
+      }
+      if (cands.length <= 1) continue;
+
+      if (next + 1 <= TOTAL && !hs.has(next + 1)) {
+        const p = posOf[next + 1];
+        cands = cands.filter(cd => isAdj(cd.r, cd.c, p.r, p.c));
+      }
+      if (cands.length <= 1) continue;
+
+      const lookMax = SIZE <= 5 ? 6 : 4;
+      for (let look = 2; look <= lookMax && cands.length > 1; look++) {
+        const fn = next + look;
+        if (fn > TOTAL) break;
+        if (!hs.has(fn)) {
+          const fp = posOf[fn];
+          cands = cands.filter(cd => {
+            const cheb = Math.max(Math.abs(cd.r - fp.r), Math.abs(cd.c - fp.c));
+            return cheb <= look;
+          });
+        }
+      }
+      if (cands.length > 1) return false;
+    }
+    return true;
+  }
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  const attempts = SIZE <= 5 ? 12 : 8;
+  let bestSet = new Set();
+  for (let a = 0; a < attempts; a++) {
+    const candidates = shuffle([...Array.from({length: TOTAL - 1}, (_, i) => i + 2)]);
+    const hs = new Set();
+    for (const num of candidates) {
+      if (hs.size >= targetCount) break;
+      hs.add(num);
+      if (!isSolvable(hs)) hs.delete(num);
+    }
+    if (hs.size > bestSet.size) bestSet = hs;
+    if (bestSet.size >= targetCount) break;
+  }
+  return bestSet;
+}
+
+// ============ RENDER ============
+function applyCellStyle() {
+  const mode = MODES[currentMode];
+  const cs = mode.cellSize;
+  const gridEl = $('grid');
+  gridEl.style.gridTemplateColumns = `repeat(${SIZE}, ${cs}px)`;
+  gridEl.style.gridTemplateRows = `repeat(${SIZE}, ${cs}px)`;
+}
+
+function renderGrid() {
+  const mode = MODES[currentMode];
+  const cs = mode.cellSize;
+  const grid = $('grid');
+  grid.innerHTML = '';
+  applyCellStyle();
+
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      const num = board[r][c];
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.style.width = cs + 'px';
+      cell.style.height = cs + 'px';
+      cell.style.fontSize = mode.fontSize;
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+      cell.dataset.num = num;
+
+      if (hiddenSet.has(num)) {
+        cell.classList.add('hidden');
+        cell.style.setProperty('--q-size', mode.qSize);
+      } else {
+        cell.classList.add('visible');
+        cell.textContent = num;
+      }
+
+      cell.addEventListener('click', () => onCellClick(r, c, num, cell));
+      grid.appendChild(cell);
+    }
+  }
+  // Dynamic ? size
+  document.querySelectorAll('.cell.hidden::after');
+  updateLineCanvas();
+}
+
+function getCell(r, c) {
+  return $('grid').children[r * SIZE + c];
+}
+
+function updateLineCanvas() {
+  const svg = $('lineCanvas');
+  const gridEl = $('grid');
+  svg.setAttribute('width', gridEl.offsetWidth);
+  svg.setAttribute('height', gridEl.offsetHeight);
+  svg.innerHTML = '';
+
+  for (let n = 1; n < nextNum - 1; n++) {
+    const p1 = posOf[n], p2 = posOf[n + 1];
+    if (!p1 || !p2) continue;
+    const c1 = getCell(p1.r, p1.c);
+    const c2 = getCell(p2.r, p2.c);
+    const x1 = c1.offsetLeft + c1.offsetWidth / 2;
+    const y1 = c1.offsetTop + c1.offsetHeight / 2;
+    const x2 = c2.offsetLeft + c2.offsetWidth / 2;
+    const y2 = c2.offsetTop + c2.offsetHeight / 2;
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    svg.appendChild(line);
+  }
+}
+
+function updateInfo() {
+  $('infoLevel').textContent = currentLevel + 1;
+  $('infoTimer').textContent = timer;
+  const lvl = LEVELS[currentLevel];
+  if (lvl && lvl.hideNext) {
+    $('infoNext').textContent = '???';
+  } else {
+    $('infoNext').textContent = nextNum > TOTAL ? '✓' : nextNum;
+  }
+  const tw = $('timerWrap');
+  if (timer <= 10) tw.classList.add('danger');
+  else tw.classList.remove('danger');
+}
+
+function renderProgress(containerId) {
+  const container = $(containerId);
+  container.innerHTML = '';
+  for (let i = 0; i < LEVELS.length; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'level-dot';
+    if (i < currentLevel) dot.classList.add('completed');
+    if (i === currentLevel) dot.classList.add('current');
+    container.appendChild(dot);
+  }
+}
+
+// ============ GAME LOGIC ============
+function onCellClick(r, c, num, cell) {
+  if (!gameActive) return;
+  if (num === nextNum) {
+    const mode = MODES[currentMode];
+    cell.classList.remove('hidden', 'visible');
+    cell.classList.add('found');
+    cell.textContent = num;
+    cell.style.color = '#00f0ff';
+    cell.style.fontSize = mode.fontSize;
+    createRipple(cell);
+    nextNum++;
+    updateInfo();
+    updateLineCanvas();
+    if (nextNum > TOTAL) {
+      gameActive = false;
+      clearInterval(timerInterval);
+      setTimeout(() => levelComplete(), 500);
+    }
+  } else {
+    gameActive = false;
+    clearInterval(timerInterval);
+    cell.classList.add('wrong');
+    setTimeout(() => {
+      revealAll();
+      setTimeout(() => showFail('点击了错误的数字！'), 800);
+    }, 500);
+  }
+}
+
+function createRipple(cell) {
+  const ripple = document.createElement('div');
+  ripple.className = 'ripple';
+  ripple.style.width = ripple.style.height = '40px';
+  ripple.style.left = '50%'; ripple.style.top = '50%';
+  ripple.style.marginLeft = '-20px'; ripple.style.marginTop = '-20px';
+  cell.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 600);
+}
+
+function revealAll() {
+  const mode = MODES[currentMode];
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      const cell = getCell(r, c);
+      if (!cell.classList.contains('found')) {
+        cell.classList.remove('hidden');
+        cell.classList.add('visible');
+        cell.textContent = board[r][c];
+        cell.style.fontSize = mode.fontSize;
+        cell.style.opacity = '0.5';
+      }
+    }
+  }
+  const tmpNext = nextNum;
+  nextNum = TOTAL;
+  updateLineCanvas();
+  nextNum = tmpNext;
+}
+
+function levelComplete() {
+  currentLevel++;
+  if (currentLevel >= LEVELS.length) {
+    showVictory();
+  } else {
+    showLevelScreen();
+  }
+}
+
+function showFail(msg) {
+  $('failMsg').textContent = msg;
+  $('gameArea').style.display = 'none';
+  $('failScreen').classList.add('active');
+}
+
+function showVictory() {
+  $('gameArea').style.display = 'none';
+  $('victoryMsg').innerHTML = `以 ${MODES[currentMode].label} 模式穿越迷雾<br>揭开所有数字的真相，你的洞察力无与伦比！`;
+  $('victoryScreen').classList.add('active');
+  startFireworks();
+}
+
+function showLevelScreen() {
+  $('gameArea').style.display = 'none';
+  $('levelNum').textContent = currentLevel + 1;
+  $('levelTitle').textContent = LEVELS[currentLevel].name;
+  const lv = LEVELS[currentLevel];
+  const hintText = lv.hideNext ? ' · 🚫无提示' : '';
+  $('levelDesc').textContent = `${SIZE}×${SIZE} · 隐藏 ${lv.hidden}/${TOTAL} · 限时 ${lv.time}秒${hintText}`;
+  renderProgress('levelProgress');
+  $('levelScreen').classList.add('active');
+}
+
+// ============ FLOW ============
+function renderLevelSelect() {
+  const container = $('levelSelect');
+  container.innerHTML = '';
+  for (let i = 0; i < LEVELS.length; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'level-btn';
+    btn.textContent = i + 1;
+    btn.title = LEVELS[i].name;
+    btn.addEventListener('click', () => jumpToLevel(i));
+    container.appendChild(btn);
+  }
+}
+
+function jumpToLevel(level) {
+  currentLevel = level;
+  hideAllOverlays();
+  showLevelScreen();
+}
+
+function startGame() {
+  currentLevel = 0;
+  hideAllOverlays();
+  showLevelScreen();
+}
+
+function beginLevel() {
+  hideAllOverlays();
+  initLevel();
+}
+
+function retryLevel() {
+  hideAllOverlays();
+  initLevel();
+}
+
+function backToStart() {
+  hideAllOverlays();
+  currentLevel = 0;
+  $('startScreen').classList.add('active');
+  stopFireworks();
+}
+
+function hideAllOverlays() {
+  document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+  stopFireworks();
+}
+
+function initLevel() {
+  const target = LEVELS[currentLevel].hidden;
+  let bestBoard, bestPos, bestHidden;
+  let bestCount = 0;
+  const boardTries = SIZE >= 8 ? 6 : 4;
+  for (let t = 0; t < boardTries; t++) {
+    board = generateBoard();
+    posOf = {};
+    for (let r = 0; r < SIZE; r++)
+      for (let c = 0; c < SIZE; c++)
+        posOf[board[r][c]] = {r, c};
+    const hs = computeMaxHidden(target);
+    if (hs.size > bestCount) {
+      bestCount = hs.size;
+      bestBoard = board.map(r => [...r]);
+      bestPos = {...posOf};
+      bestHidden = hs;
+    }
+    if (bestCount >= target) break;
+  }
+  board = bestBoard;
+  posOf = bestPos;
+  hiddenSet = bestHidden;
+  nextNum = 1;
+  timer = LEVELS[currentLevel].time;
+  gameActive = true;
+
+  $('gameArea').style.display = '';
+  renderProgress('gameProgress');
+  renderGrid();
+  updateInfo();
+
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    if (!gameActive) return;
+    timer--;
+    updateInfo();
+    if (timer <= 0) {
+      gameActive = false;
+      clearInterval(timerInterval);
+      revealAll();
+      setTimeout(() => showFail('时间耗尽！'), 800);
+    }
+  }, 1000);
+}
+
+// Init
+renderLevelSelect();
+
+// ============ BACKGROUND PARTICLES ============
+(function initBgParticles() {
+  const canvas = $('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  const COUNT = 60;
+
+  function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+  resize();
+  addEventListener('resize', resize);
+
+  class P {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.vx = (Math.random() - 0.5) * 0.4;
+      this.vy = (Math.random() - 0.5) * 0.4;
+      this.s = Math.random() * 2 + 0.5;
+      this.a = Math.random() * 0.3 + 0.05;
+      this.c = ['0,240,255','123,47,247','255,45,149'][Math.floor(Math.random()*3)];
+    }
+    update() {
+      this.x += this.vx; this.y += this.vy;
+      if (this.x<0||this.x>canvas.width||this.y<0||this.y>canvas.height) this.reset();
+    }
+    draw() {
+      ctx.beginPath(); ctx.arc(this.x,this.y,this.s,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${this.c},${this.a})`; ctx.fill();
+    }
+  }
+
+  for (let i=0;i<COUNT;i++) particles.push(new P());
+
+  (function animate() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{p.update();p.draw();});
+    for (let i=0;i<particles.length;i++)
+      for (let j=i+1;j<particles.length;j++) {
+        const dx=particles[i].x-particles[j].x, dy=particles[i].y-particles[j].y;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if (d<120) {
+          ctx.beginPath(); ctx.moveTo(particles[i].x,particles[i].y);
+          ctx.lineTo(particles[j].x,particles[j].y);
+          ctx.strokeStyle=`rgba(0,240,255,${0.06*(1-d/120)})`;
+          ctx.lineWidth=0.5; ctx.stroke();
+        }
+      }
+    requestAnimationFrame(animate);
+  })();
+})();
+
+// ============ FIREWORKS ============
+let fireworksActive=false, fireworksParticles=[], fireworksRAF=null;
+
+function startFireworks() {
+  fireworksActive=true; fireworksParticles=[];
+  const canvas=$('fireworksCanvas'), ctx=canvas.getContext('2d');
+  canvas.width=innerWidth; canvas.height=innerHeight;
+
+  function burst(x,y) {
+    const count=60+Math.floor(Math.random()*40), hue=Math.random()*360;
+    for (let i=0;i<count;i++) {
+      const angle=(Math.PI*2/count)*i+Math.random()*0.2, speed=2+Math.random()*4;
+      fireworksParticles.push({
+        x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
+        life:1,decay:0.01+Math.random()*0.015,size:2+Math.random()*2,
+        hue:hue+Math.random()*40-20
+      });
+    }
+  }
+
+  let lastBurst=0;
+  (function animate(ts) {
+    if (!fireworksActive) return;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if (ts-lastBurst>400+Math.random()*600) {
+      burst(canvas.width*0.2+Math.random()*canvas.width*0.6,
+            canvas.height*0.15+Math.random()*canvas.height*0.4);
+      lastBurst=ts;
+    }
+    for (let i=fireworksParticles.length-1;i>=0;i--) {
+      const p=fireworksParticles[i];
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.04; p.vx*=0.99; p.life-=p.decay;
+      if (p.life<=0){fireworksParticles.splice(i,1);continue;}
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);
+      ctx.fillStyle=`hsla(${p.hue},100%,60%,${p.life})`; ctx.fill();
+    }
+    fireworksRAF=requestAnimationFrame(animate);
+  })(0);
+}
+
+function stopFireworks() {
+  fireworksActive=false;
+  if (fireworksRAF) cancelAnimationFrame(fireworksRAF);
+  const c=$('fireworksCanvas').getContext('2d');
+  c.clearRect(0,0,innerWidth,innerHeight);
+  fireworksParticles=[];
+}
+</script>
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-55383282-4', 'auto');
+    ga('send', 'pageview');
+</script>
+</body>
+</html>
