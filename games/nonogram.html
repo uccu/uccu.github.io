@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数织谜题</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+      font-family: 'Noto Sans SC', sans-serif;
+      color: #e0e0e0;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #00d9ff, #00ff88);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #8892a0;
+      font-size: 0.95rem;
+    }
+
+    /* Screens */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* Card Style */
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .card h2 {
+      color: #00d9ff;
+      margin-bottom: 16px;
+      font-size: 1.3rem;
+    }
+
+    /* Rules Section */
+    .rules {
+      text-align: left;
+    }
+
+    .rule-item {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+
+    .rule-icon {
+      width: 28px;
+      height: 28px;
+      background: rgba(0, 217, 255, 0.15);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .rule-text {
+      color: #b0b8c8;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .rule-text strong {
+      color: #00d9ff;
+    }
+
+    /* Difficulty Selection */
+    .diff-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .diff-btn {
+      padding: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      color: #e0e0e0;
+      cursor: pointer;
+      transition: all 0.25s;
+      text-align: center;
+    }
+
+    .diff-btn:hover {
+      border-color: #00d9ff;
+      background: rgba(0, 217, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .diff-btn .name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .diff-btn .range {
+      font-size: 0.8rem;
+      color: #8892a0;
+    }
+
+    .diff-btn .progress {
+      font-size: 0.75rem;
+      color: #00ff88;
+      margin-top: 4px;
+    }
+
+    /* Mode Toggle for Mobile */
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .mode-btn {
+      padding: 10px 20px;
+      border: 2px solid rgba(0, 217, 255, 0.3);
+      border-radius: 20px;
+      background: rgba(0, 0, 0, 0.3);
+      color: #8892a0;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mode-btn.active {
+      background: rgba(0, 217, 255, 0.2);
+      border-color: #00d9ff;
+      color: #00d9ff;
+    }
+
+    .mode-btn .icon {
+      font-size: 1.1rem;
+    }
+
+    /* Continue Button */
+    .continue-section {
+      margin-top: 8px;
+    }
+
+    .btn {
+      padding: 14px 40px;
+      border: none;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #00d9ff, #00ff88);
+      color: #1a1a2e;
+    }
+
+    .btn-primary:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 20px rgba(0, 217, 255, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e0e0e0;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-sm {
+      padding: 10px 24px;
+      font-size: 0.9rem;
+    }
+
+    /* Game Area */
+    #gameScreen {
+      padding-top: 10px;
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 700px;
+      margin-bottom: 12px;
+      padding: 12px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+    }
+
+    .game-info {
+      display: flex;
+      gap: 24px;
+    }
+
+    .info-item {
+      text-align: center;
+    }
+
+    .info-label {
+      font-size: 0.75rem;
+      color: #8892a0;
+      margin-bottom: 2px;
+    }
+
+    .info-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #00d9ff;
+    }
+
+    /* Nonogram Grid */
+    .nonogram-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .nonogram {
+      display: grid;
+      gap: 0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(0, 217, 255, 0.3);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .corner {
+      background: rgba(255, 255, 255, 0)
+    }
+
+    .corner {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .col-hints {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 4px 2px;
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 0.7rem;
+      color: #00d9ff;
+      min-height: 50px;
+    }
+
+    .col-hints span {
+      display: block;
+      line-height: 1.2;
+    }
+
+    .row-hints {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 2px 8px;
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 0.75rem;
+      color: #00d9ff;
+      min-width: 60px;
+      white-space: nowrap;
+      gap: 5px;
+    }
+
+    .row-hints span {
+      display: inline-block;
+      text-align: center;
+    }
+
+    .cell {
+      width: 32px;
+      height: 32px;
+      background: #1e2433;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    .cell:hover {
+      background: rgba(0, 217, 255, 0.2);
+    }
+
+    .cell.filled {
+      background: #2d3748;
+    }
+
+    .cell.filled::after {
+      content: '';
+      width: 65%;
+      height: 65%;
+      background: linear-gradient(135deg, #00d9ff, #00ff88);
+      border-radius: 3px;
+    }
+
+    .cell.marked::after {
+      content: '✕';
+      color: #ff6b6b;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .cell.revealed {
+      background: rgba(0, 217, 255, 0.15);
+      cursor: default;
+    }
+
+    .cell.revealed::after {
+      content: '';
+      width: 60%;
+      height: 60%;
+      background: #00d9ff;
+      border-radius: 3px;
+    }
+
+    .cell.row-done,
+    .cell.col-done {
+      background: rgba(0, 255, 136, 0.08);
+    }
+
+    /* Game Controls */
+    .game-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* Progress Bar */
+    .progress-bar {
+      width: 100%;
+      max-width: 400px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00d9ff, #00ff88);
+      transition: width 0.3s;
+    }
+
+    /* Overlay */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .overlay.active {
+      display: flex;
+    }
+
+    .overlay-content {
+      background: #1a1a2e;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      max-width: 400px;
+    }
+
+    .overlay-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+
+    .overlay h2 {
+      font-size: 1.8rem;
+      margin-bottom: 12px;
+      color: #00ff88;
+    }
+
+    .overlay p {
+      color: #8892a0;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .overlay-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(0, 217, 255, 0.9);
+      color: #1a1a2e;
+      padding: 12px 28px;
+      border-radius: 50px;
+      font-weight: 500;
+      transition: transform 0.3s;
+      z-index: 200;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Saved Progress Info */
+    .saved-info {
+      font-size: 0.85rem;
+      color: #8892a0;
+      margin-top: 8px;
+    }
+
+    .saved-info span {
+      color: #00ff88;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        overflow-x: hidden;
+      }
+
+      .container {
+        padding: 10px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .rules {
+        padding: 0 4px;
+      }
+
+      .rule-item {
+        margin-bottom: 10px;
+      }
+
+      .rule-text {
+        font-size: 0.85rem;
+      }
+
+      .diff-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+
+      .diff-btn {
+        padding: 12px 8px;
+      }
+
+      .diff-btn .name {
+        font-size: 1rem;
+      }
+
+      .diff-btn .range {
+        font-size: 0.7rem;
+      }
+
+      .game-header {
+        padding: 8px 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .game-info {
+        gap: 16px;
+      }
+
+      .info-value {
+        font-size: 1rem;
+      }
+
+      .nonogram-wrapper {
+        overflow-x: auto;
+        max-width: 100vw;
+      }
+
+      .nonogram {
+        transform-origin: top left;
+      }
+
+      .cell.marked::after {
+        font-size: 12px;
+      }
+
+      .col-hints,
+      .row-hints {
+        font-size: 0.6rem;
+        padding: 1px 3px;
+      }
+
+      .col-hints {
+        min-height: 30px;
+      }
+
+      .row-hints {
+        min-width: 40px;
+        font-size: 0.55rem;
+      }
+
+      .row-hints span {
+        min-width: 10px;
+      }
+
+      h1 {
+        font-size: 1.4rem;
+      }
+
+      .subtitle {
+        font-size: 0.8rem;
+      }
+
+      .mode-toggle {
+        justify-content: center;
+      }
+
+      .mode-btn {
+        padding: 8px 14px;
+        font-size: 0.8rem;
+      }
+
+      .game-controls {
+        gap: 8px;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+      }
+
+      .btn-sm {
+        padding: 8px 16px;
+        font-size: 0.8rem;
+      }
+
+      .overlay-content {
+        padding: 24px 16px;
+        margin: 10px;
+      }
+
+      .overlay h2 {
+        font-size: 1.4rem;
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Start Screen -->
+    <div id="startScreen" class="screen active">
+      <header>
+        <h1>数织谜题</h1>
+        <p class="subtitle">Nonogram · 逻辑解密游戏</p>
+      </header>
+
+      <div class="card">
+        <h2>游戏规则</h2>
+        <div class="rules">
+          <div class="rule-item">
+            <div class="rule-icon">1</div>
+            <div class="rule-text">
+              <strong>涂黑格子</strong>：根据行和列的数字提示，点击将格子涂黑。
+              数字表示该行/列中<strong>连续</strong>涂黑的格子数量。
+            </div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-icon">2</div>
+            <div class="rule-text">
+              <strong>标记×号</strong>：确定是空白的格子，长按或使用「标记」模式点击标记×。
+            </div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-icon">3</div>
+            <div class="rule-text">
+              <strong>数字提示</strong>：如行首显示 <strong>5 3</strong>，表示该行有5个连续黑格，之后至少1个空格，再有3个连续黑格。
+            </div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-icon">4</div>
+            <div class="rule-text">
+              <strong>交叉验证</strong>：行提示和列提示必须同时满足，利用交叉推理找出所有需要涂黑的格子。
+            </div>
+          </div>
+          <div class="rule-item">
+            <div class="rule-icon">5</div>
+            <div class="rule-text">
+              <strong>目标</strong>：将所有提示数字对应的格子涂黑，即可通关。已完成行/列会高亮显示。
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>选择难度</h2>
+        <p class="saved-info" id="savedInfo"></p>
+        <div class="diff-grid">
+          <button class="diff-btn" onclick="selectDifficulty(0)">
+            <div class="name">入门</div>
+            <div class="range">关卡 1-10</div>
+            <div class="progress" id="prog0"></div>
+          </button>
+          <button class="diff-btn" onclick="selectDifficulty(1)">
+            <div class="name">简单</div>
+            <div class="range">关卡 11-30</div>
+            <div class="progress" id="prog1"></div>
+          </button>
+          <button class="diff-btn" onclick="selectDifficulty(2)">
+            <div class="name">中等</div>
+            <div class="range">关卡 31-50</div>
+            <div class="progress" id="prog2"></div>
+          </button>
+          <button class="diff-btn" onclick="selectDifficulty(3)">
+            <div class="name">困难</div>
+            <div class="range">关卡 51-100</div>
+            <div class="progress" id="prog3"></div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="screen">
+      <div class="game-header">
+        <div class="game-info">
+          <div class="info-item">
+            <div class="info-label">关卡</div>
+            <div class="info-value" id="levelNum">1</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">难度</div>
+            <div class="info-value" id="levelDiff">入门</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="backToMenu()">返回</button>
+      </div>
+      <div class="nonogram-wrapper">
+        <div class="mode-toggle" id="modeToggle">
+          <button class="mode-btn active" id="modeFill" onclick="setMode('fill')">
+            <span class="icon">⬛</span> 涂黑
+          </button>
+          <button class="mode-btn" id="modeMark" onclick="setMode('mark')">
+            <span class="icon">✕</span> 标记
+          </button>
+        </div>
+        <div class="nonogram" id="nonogram"></div>
+      </div>
+      <div class="game-controls">
+        <button class="btn btn-secondary btn-sm" onclick="resetLevel()">重置</button>
+        <button class="btn btn-secondary btn-sm" onclick="undoMove()">撤销</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Victory Overlay -->
+  <div class="overlay" id="victoryOverlay">
+    <div class="overlay-content">
+      <div class="overlay-icon">🎉</div>
+      <h2>通关成功！</h2>
+      <p id="victoryMsg">恭喜完成第 1 关！</p>
+      <div class="overlay-buttons">
+        <button class="btn btn-secondary" onclick="backToMenu()">返回主页</button>
+        <button class="btn btn-primary" onclick="nextLevel()">下一关</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ============ LEVEL DATA ============
+    // 100 pre-defined levels (12x12 grids)
+    let LEVELS = null;
+
+    function generateAllLevels() {
+      const levels = [];
+
+      // Levels 1-10: Easy patterns with 10-16 revealed cells
+      levels.push(...generateEasyLevels(1, 10));
+
+      // Levels 11-30: Medium patterns with 4-7 revealed cells
+      levels.push(...generateMediumLevels(11, 30));
+
+      // Levels 31-50: Random with 2-4 revealed cells
+      levels.push(...generateRandomLevels(31, 50, 2, 4));
+
+      // Levels 51-100: Hard random with 0-2 revealed cells
+      levels.push(...generateRandomLevels(51, 100, 0, 2));
+
+      return levels;
+    }
+
+    // Patterns for easy levels (1-10)
+    const PATTERNS = {
+      heart: [
+        [0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
+      ],
+      star: [
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0],
+        [0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0],
+        [1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+      ],
+      flag: [
+        [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      ],
+      smile: [
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1],
+        [1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+        [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1],
+        [0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+      ],
+      house: [
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      ],
+      tree: [
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+      ],
+      fish: [
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
+      ],
+      anchor: [
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        [1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+      ],
+      key: [
+        [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+      ],
+      candle: [
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      ]
+    };
+
+    // Medium patterns for levels 11-30
+    const MEDIUM_PATTERNS = {
+      rocket: [
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0],
+        [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+      ],
+      umbrella: [
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+      ],
+      crown: [
+        [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+      ],
+      spaceship: [
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
+        [1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1],
+        [1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
+        [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0],
+      ],
+      chessKnight: [
+        [0, 0, 1, 1, 1, 1, 0, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 1, 0, 1, 1, 1, 0, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 1, 0, 0, 0, 1, 0, 0],
+        [0, 1, 1, 0, 0, 0, 1, 1, 0],
+      ],
+      hourglass: [
+        [1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1],
+      ],
+      butterfly: [
+        [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+        [1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1],
+        [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+      ],
+      skull: [
+        [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 0, 1, 1, 1, 1, 0, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 1, 0, 1, 1, 1, 1, 0, 1, 0],
+        [0, 0, 1, 0, 1, 1, 0, 1, 0, 0],
+        [0, 0, 0, 1, 0, 0, 1, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+      ],
+      gem: [
+        [0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
+      ],
+      skull2: [
+        [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 0, 0, 1, 1, 1, 1, 0, 0, 1],
+        [1, 0, 0, 1, 1, 1, 1, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+        [0, 1, 1, 0, 0, 0, 0, 1, 1, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+      ],
+      robot: [
+        [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 0, 1, 1, 1, 1, 0, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 0, 1, 1, 0, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 1, 1, 0, 0, 1, 1, 0, 0],
+      ],
+      swan: [
+        [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      ],
+      palm: [
+        [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+      ],
+      mushroom: [
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+      ],
+      cat: [
+        [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+        [1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+        [1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+        [1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0],
+      ],
+      dog: [
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+      ],
+      cup: [
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+      ],
+      bed: [
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+      ],
+      ladder: [
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      ]
+    };
+
+    function generateEasyLevels(startId, endId) {
+      const levels = [];
+      const patternKeys = Object.keys(PATTERNS);
+      const size = 12;
+
+      for (let i = startId; i <= endId; i++) {
+        const patternKey = patternKeys[(i - startId) % patternKeys.length];
+        const pattern = PATTERNS[patternKey];
+
+        // Create 12x12 grid
+        const solution = Array(12).fill(null).map(() => Array(12).fill(0));
+
+        // Center the pattern (adjust for smaller grid)
+        const offsetR = Math.floor((12 - pattern.length) / 2);
+        const offsetC = Math.floor((12 - pattern[0].length) / 2);
+
+        for (let r = 0; r < pattern.length; r++) {
+          for (let c = 0; c < pattern[r].length; c++) {
+            if (offsetR + r >= 0 && offsetR + r < 12 && offsetC + c >= 0 && offsetC + c < 12) {
+              solution[offsetR + r][offsetC + c] = pattern[r][c];
+            }
+          }
+        }
+
+        // Generate revealed cells (10-16 for easy)
+        const revealed = [];
+        const targetRevealed = 10 + Math.floor(Math.random() * 7); // 10-16
+
+        // Reveal cells in a pattern-aware way (corners, edges)
+        const positions = [];
+        for (let r = 0; r < 12; r++) {
+          for (let c = 0; c < 12; c++) {
+            if (solution[r][c] === 1) {
+              // Priority: corners and edges first
+              const priority = (r === 0 || r === 11 || c === 0 || c === 11) ? 2 : 1;
+              positions.push({ r, c, priority });
+            }
+          }
+        }
+
+        // Sort by priority (higher first)
+        positions.sort((a, b) => b.priority - a.priority);
+
+        for (let j = 0; j < Math.min(targetRevealed, positions.length); j++) {
+          revealed.push([positions[j].r, positions[j].c]);
+        }
+
+        const level = {
+          id: i,
+          size: size,
+          solution: solution,
+          revealed: revealed,
+          rowHints: calculateRowHints(solution),
+          colHints: calculateColHints(solution),
+          difficulty: '入门'
+        };
+
+        levels.push(level);
+      }
+
+      return levels;
+    }
+
+    function generateMediumLevels(startId, endId) {
+      const levels = [];
+      const patternKeys = Object.keys(MEDIUM_PATTERNS);
+      const size = 12;
+
+      for (let i = startId; i <= endId; i++) {
+        const patternKey = patternKeys[(i - startId) % patternKeys.length];
+        const pattern = MEDIUM_PATTERNS[patternKey];
+
+        const solution = Array(12).fill(null).map(() => Array(12).fill(0));
+
+        const offsetR = Math.floor((12 - pattern.length) / 2);
+        const offsetC = Math.floor((12 - pattern[0].length) / 2);
+
+        for (let r = 0; r < pattern.length; r++) {
+          for (let c = 0; c < pattern[r].length; c++) {
+            if (pattern[r][c] !== undefined && offsetR + r >= 0 && offsetR + r < 12 && offsetC + c >= 0 && offsetC + c < 12) {
+              solution[offsetR + r][offsetC + c] = pattern[r][c];
+            }
+          }
+        }
+
+        // Generate revealed cells (4-7 for medium)
+        const revealed = [];
+        const targetRevealed = 4 + Math.floor(Math.random() * 4); // 4-7
+
+        const positions = [];
+        for (let r = 0; r < 12; r++) {
+          for (let c = 0; c < 12; c++) {
+            if (solution[r][c] === 1) {
+              positions.push({ r, c });
+            }
+          }
+        }
+
+        // Shuffle and pick
+        shuffleArray(positions);
+        for (let j = 0; j < Math.min(targetRevealed, positions.length); j++) {
+          revealed.push([positions[j].r, positions[j].c]);
+        }
+
+        const level = {
+          id: i,
+          size: size,
+          solution: solution,
+          revealed: revealed,
+          rowHints: calculateRowHints(solution),
+          colHints: calculateColHints(solution),
+          difficulty: '简单'
+        };
+
+        levels.push(level);
+      }
+
+      return levels;
+    }
+
+    function generateRandomLevels(startId, endId, minRevealed, maxRevealed) {
+      const levels = [];
+      const size = 12;
+
+      for (let i = startId; i <= endId; i++) {
+        let solution;
+        let attempts = 0;
+
+        // Generate a valid random puzzle
+        do {
+          solution = generateRandomSolution(size);
+          attempts++;
+        } while (!isValidPuzzle(solution) && attempts < 100);
+
+        // Calculate how many revealed cells based on difficulty
+        const targetRevealed = minRevealed + Math.floor(Math.random() * (maxRevealed - minRevealed + 1));
+
+        // Reveal cells ensuring solvability
+        const revealed = selectRevealedCells(solution, targetRevealed);
+
+        const level = {
+          id: i,
+          size: size,
+          solution: solution,
+          revealed: revealed,
+          rowHints: calculateRowHints(solution),
+          colHints: calculateColHints(solution),
+          difficulty: i <= 50 ? '中等' : '困难'
+        };
+
+        levels.push(level);
+      }
+
+      return levels;
+    }
+
+    function generateRandomSolution(size) {
+      const solution = Array(size).fill(null).map(() => Array(size).fill(0));
+
+      // Generate a somewhat structured random pattern
+      const density = 0.3 + Math.random() * 0.35; // 30-65% density
+
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          // Create some structure - groups of cells
+          const baseProb = Math.random();
+          if (baseProb < density) {
+            // Check if this creates a valid row pattern
+            solution[r][c] = 1;
+          }
+        }
+      }
+
+      // Ensure at least some cells are filled
+      let filled = solution.flat().filter(x => x === 1).length;
+      if (filled < size * 2) {
+        // Add some random clusters
+        const clusters = 3 + Math.floor(Math.random() * 5);
+        for (let i = 0; i < clusters; i++) {
+          const cr = Math.floor(Math.random() * size);
+          const cc = Math.floor(Math.random() * size);
+          const clusterSize = 2 + Math.floor(Math.random() * 4);
+
+          for (let dr = -clusterSize; dr <= clusterSize; dr++) {
+            for (let dc = -clusterSize; dc <= clusterSize; dc++) {
+              if (Math.random() < 0.3) {
+                const nr = cr + dr;
+                const nc = cc + dc;
+                if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+                  solution[nr][nc] = 1;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      return solution;
+    }
+
+    function isValidPuzzle(solution) {
+      // Check if puzzle has reasonable row/column patterns
+      const size = solution.length;
+      let validRows = 0;
+      let validCols = 0;
+
+      for (let i = 0; i < size; i++) {
+        const rowHints = calculateLineHints(solution[i]);
+        if (rowHints.length > 0 && rowHints.length <= 5) validRows++;
+
+        const col = solution.map(row => row[i]);
+        const colHints = calculateLineHints(col);
+        if (colHints.length > 0 && colHints.length <= 5) validCols++;
+      }
+
+      return validRows >= size * 0.6 && validCols >= size * 0.6;
+    }
+
+    function selectRevealedCells(solution, targetCount) {
+      const revealed = [];
+      const size = solution.length;
+
+      // Find all cells that would be revealed
+      const candidates = [];
+
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (solution[r][c] === 1) {
+            candidates.push({ r, c, score: 0 });
+          }
+        }
+      }
+
+      // Score each candidate based on uniqueness of row/col hints
+      for (const cand of candidates) {
+        const rowHints = calculateLineHints(solution[cand.r]);
+        const colHints = calculateLineHints(solution.map(row => row[cand.c]));
+
+        // Cells that help identify unique patterns
+        if (rowHints.length <= 2 || colHints.length <= 2) {
+          cand.score += 2;
+        }
+        if (cand.r === 0 || cand.r === size - 1 || cand.c === 0 || cand.c === size - 1) {
+          cand.score += 1;
+        }
+      }
+
+      // Sort by score and pick top ones
+      candidates.sort((a, b) => b.score - a.score);
+
+      for (let i = 0; i < Math.min(targetCount, candidates.length); i++) {
+        revealed.push([candidates[i].r, candidates[i].c]);
+      }
+
+      return revealed;
+    }
+
+    function calculateLineHints(line) {
+      const hints = [];
+      let count = 0;
+
+      for (const cell of line) {
+        if (cell === 1) {
+          count++;
+        } else if (count > 0) {
+          hints.push(count);
+          count = 0;
+        }
+      }
+
+      if (count > 0) {
+        hints.push(count);
+      }
+
+      return hints.length > 0 ? hints : [0];
+    }
+
+    function calculateRowHints(solution) {
+      return solution.map(row => calculateLineHints(row));
+    }
+
+    function calculateColHints(solution) {
+      const hints = [];
+      for (let c = 0; c < solution[0].length; c++) {
+        const col = solution.map(row => row[c]);
+        hints.push(calculateLineHints(col));
+      }
+      return hints;
+    }
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // ============ GAME STATE ============
+    const STORAGE_KEY = 'nonogram_progress';
+
+    let currentLevel = 1;
+    let currentState = []; // 0 = empty, 1 = filled, 2 = marked
+    let history = [];
+    let completedLevels = new Set();
+    let levelProgress = {}; // {levelId: state array}
+
+    // Mobile mode: 'fill' or 'mark'
+    let currentMode = 'fill';
+    let touchTimer = null;
+
+    // Drag state
+    let isDragging = false;
+    let dragType = 0; // 0 = fill, 1 = mark
+    let dragAction = 0; // 1 = set filled, 0 = clear filled, 2 = set marked, 0 = clear marked
+    let dragVisited = new Set();
+    let dragHistorySaved = false;
+
+    function loadProgress() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) {
+          const parsed = JSON.parse(data);
+          completedLevels = new Set(parsed.completed || []);
+          levelProgress = parsed.progress || {};
+          return parsed.currentLevel || 1;
+        }
+      } catch (e) {
+        console.error('Failed to load progress:', e);
+      }
+      return 1;
+    }
+
+    function saveProgress() {
+      try {
+        const data = {
+          completed: Array.from(completedLevels),
+          progress: levelProgress,
+          currentLevel: currentLevel
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (e) {
+        console.error('Failed to save progress:', e);
+      }
+    }
+
+    // ============ UI FUNCTIONS ============
+    function $(id) { return document.getElementById(id); }
+
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      $(screenId).classList.add('active');
+    }
+
+    function selectDifficulty(diffIndex) {
+      const startLevels = [1, 11, 31, 51];
+      currentLevel = startLevels[diffIndex];
+      showScreen('gameScreen');
+      initLevel(currentLevel);
+    }
+
+    function updateSavedInfo() {
+      const savedLevel = loadProgress();
+      const totalCompleted = completedLevels.size;
+
+      $('savedInfo').innerHTML = `已通关 <span>${totalCompleted}</span>/100 关 | 当前进度: 第 <span>${savedLevel}</span> 关`;
+
+      // Update progress for each difficulty
+      const ranges = [
+        [1, 10],
+        [11, 30],
+        [31, 50],
+        [51, 100]
+      ];
+
+      for (let i = 0; i < 4; i++) {
+        const [start, end] = ranges[i];
+        const completed = Array.from(completedLevels).filter(l => l >= start && l <= end).length;
+        const total = end - start + 1;
+        $('prog' + i).textContent = `已通关 ${completed}/${total}`;
+      }
+    }
+
+    function initLevel(levelId) {
+      const level = LEVELS[levelId - 1];
+      if (!level) {
+        showToast('关卡不存在！');
+        return;
+      }
+
+      currentLevel = levelId;
+
+      // Load saved state or create new
+      if (levelProgress[levelId]) {
+        currentState = JSON.parse(JSON.stringify(levelProgress[levelId]));
+      } else {
+        currentState = Array(level.size).fill(null).map(() => Array(level.size).fill(0));
+      }
+
+      history = [];
+
+      renderGame(level);
+      updateSavedInfo();
+      saveProgress();
+    }
+
+    function renderGame(level) {
+      const size = level.size;
+      const nonogram = $('nonogram');
+
+      $('levelNum').textContent = level.id;
+      $('levelDiff').textContent = level.difficulty;
+
+      nonogram.innerHTML = '';
+
+      // Dynamically calculate cell size based on viewport
+      const isMobile = window.innerWidth <= 600;
+      let cellSize;
+      if (isMobile) {
+        cellSize = Math.max(20, Math.floor((window.innerWidth - 80) / size));
+      } else {
+        cellSize = 32;
+      }
+
+      // Calculate max row hints width
+      const maxHints = Math.max(...level.rowHints.map(h => h.length));
+      const hintWidth = isMobile
+        ? Math.max(40, maxHints * 14 + 10)
+        : Math.max(60, maxHints * 18 + 16);
+
+      nonogram.style.gridTemplateColumns = `${hintWidth}px repeat(${size}, ${cellSize}px)`;
+      nonogram.style.gridTemplateRows = `auto repeat(${size}, ${cellSize}px)`;
+
+      // Corner cell
+      const corner = document.createElement('div');
+      corner.className = 'corner';
+      nonogram.appendChild(corner);
+
+      // Column hints
+      for (let c = 0; c < size; c++) {
+        const colHint = document.createElement('div');
+        colHint.className = 'col-hints';
+        colHint.id = `ch-${c}`;
+        for (const num of level.colHints[c]) {
+          const span = document.createElement('span');
+          span.textContent = num;
+          colHint.appendChild(span);
+        }
+        nonogram.appendChild(colHint);
+      }
+
+      // Rows with hints
+      for (let r = 0; r < size; r++) {
+        const rowHint = document.createElement('div');
+        rowHint.className = 'row-hints';
+        rowHint.id = `rh-${r}`;
+        for (let hi = 0; hi < level.rowHints[r].length; hi++) {
+          const span = document.createElement('span');
+          span.textContent = level.rowHints[r][hi];
+          rowHint.appendChild(span);
+        }
+        nonogram.appendChild(rowHint);
+
+        for (let c = 0; c < size; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.row = r;
+          cell.dataset.col = c;
+          cell.id = `cell-${r}-${c}`;
+          cell.style.width = cellSize + 'px';
+          cell.style.height = cellSize + 'px';
+
+          // Check if revealed
+          const isRevealed = level.revealed.some(([rr, cc]) => rr === r && cc === c);
+          if (isRevealed) {
+            cell.classList.add('revealed');
+            currentState[r][c] = 1; // Force revealed cells to be filled
+          } else {
+            updateCellDisplay(r, c);
+
+            // Mouse down: start drag
+            cell.addEventListener('mousedown', (e) => {
+              e.preventDefault();
+              if (e.button === 2) {
+                dragType = 1; // right-click = mark
+              } else {
+                dragType = currentMode === 'mark' ? 1 : 0;
+              }
+              isDragging = true;
+              dragVisited = new Set();
+              dragHistorySaved = false;
+
+              // Determine action: toggle based on current state
+              if (dragType === 0) {
+                // Fill mode: if empty/marked -> fill, if filled -> clear
+                dragAction = currentState[r][c] === 1 ? -1 : 1;
+              } else {
+                // Mark mode: if empty/filled -> mark, if marked -> clear
+                dragAction = currentState[r][c] === 2 ? -2 : 2;
+              }
+
+              applyDragToCell(r, c);
+            });
+
+            // Mouse enter during drag
+            cell.addEventListener('mouseenter', () => {
+              if (isDragging) {
+                applyDragToCell(r, c);
+              }
+            });
+
+            // Context menu (desktop right-click)
+            cell.addEventListener('contextmenu', (e) => {
+              e.preventDefault();
+            });
+
+            // Touch start
+            cell.addEventListener('touchstart', (e) => {
+              e.preventDefault();
+              dragType = currentMode === 'mark' ? 1 : 0;
+              isDragging = true;
+              dragVisited = new Set();
+              dragHistorySaved = false;
+
+              if (dragType === 0) {
+                dragAction = currentState[r][c] === 1 ? -1 : 1;
+              } else {
+                dragAction = currentState[r][c] === 2 ? -2 : 2;
+              }
+
+              applyDragToCell(r, c);
+            }, { passive: false });
+
+            // Touch move: find cell under finger
+            cell.addEventListener('touchmove', (e) => {
+              e.preventDefault();
+              if (!isDragging) return;
+              const touch = e.touches[0];
+              const el = document.elementFromPoint(touch.clientX, touch.clientY);
+              if (el && el.classList.contains('cell')) {
+                const tr = parseInt(el.dataset.row);
+                const tc = parseInt(el.dataset.col);
+                if (!isNaN(tr) && !isNaN(tc)) {
+                  applyDragToCell(tr, tc);
+                }
+              }
+            }, { passive: false });
+          }
+
+          nonogram.appendChild(cell);
+        }
+      }
+
+      updateProgress();
+      checkRowColCompletion();
+    }
+
+    function updateCellDisplay(r, c) {
+      const cell = $(`cell-${r}-${c}`);
+      if (!cell || cell.classList.contains('revealed')) return;
+
+      cell.classList.remove('filled', 'marked');
+
+      if (currentState[r][c] === 1) {
+        cell.classList.add('filled');
+      } else if (currentState[r][c] === 2) {
+        cell.classList.add('marked');
+      }
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      $('modeFill').classList.toggle('active', mode === 'fill');
+      $('modeMark').classList.toggle('active', mode === 'mark');
+    }
+
+    function applyDragToCell(r, c) {
+      const level = LEVELS[currentLevel - 1];
+      const isRevealed = level.revealed.some(([rr, cc]) => rr === r && cc === c);
+      if (isRevealed) return;
+
+      const key = `${r}-${c}`;
+      if (dragVisited.has(key)) return;
+      dragVisited.add(key);
+
+      // Save history once per drag
+      if (!dragHistorySaved) {
+        history.push(JSON.parse(JSON.stringify(currentState)));
+        if (history.length > 50) history.shift();
+        dragHistorySaved = true;
+      }
+
+      // Apply action
+      if (dragAction === 1) {
+        currentState[r][c] = 1; // fill
+      } else if (dragAction === -1) {
+        currentState[r][c] = 0; // unfill
+      } else if (dragAction === 2) {
+        currentState[r][c] = 2; // mark
+      } else if (dragAction === -2) {
+        currentState[r][c] = 0; // unmark
+      }
+
+      updateCellDisplay(r, c);
+    }
+
+    function endDrag() {
+      if (isDragging && dragVisited.size > 0) {
+        levelProgress[currentLevel] = JSON.parse(JSON.stringify(currentState));
+        saveProgress();
+        updateProgress();
+        checkRowColCompletion();
+        checkWin();
+      }
+      isDragging = false;
+      dragVisited = new Set();
+    }
+
+    // Global mouse/touch end events
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchend', endDrag);
+    document.addEventListener('touchcancel', endDrag);
+
+    function handleCellClick(r, c, type) {
+      const level = LEVELS[currentLevel - 1];
+
+      // Don't allow changing revealed cells
+      const isRevealed = level.revealed.some(([rr, cc]) => rr === r && cc === c);
+      if (isRevealed) return;
+
+      // Save history
+      history.push(JSON.parse(JSON.stringify(currentState)));
+      if (history.length > 50) history.shift();
+
+      if (type === 0) {
+        // Left click - cycle: empty -> filled -> empty
+        currentState[r][c] = currentState[r][c] === 1 ? 0 : 1;
+      } else {
+        // Right click - cycle: empty -> marked -> empty
+        currentState[r][c] = currentState[r][c] === 2 ? 0 : 2;
+      }
+
+      updateCellDisplay(r, c);
+
+      // Save progress
+      levelProgress[currentLevel] = JSON.parse(JSON.stringify(currentState));
+      saveProgress();
+
+      updateProgress();
+      checkRowColCompletion();
+      checkWin();
+    }
+
+    function undoMove() {
+      if (history.length === 0) {
+        showToast('没有可撤销的操作');
+        return;
+      }
+
+      currentState = history.pop();
+
+      const level = LEVELS[currentLevel - 1];
+      for (let r = 0; r < level.size; r++) {
+        for (let c = 0; c < level.size; c++) {
+          const isRevealed = level.revealed.some(([rr, cc]) => rr === r && cc === c);
+          if (!isRevealed) {
+            updateCellDisplay(r, c);
+          }
+        }
+      }
+
+      levelProgress[currentLevel] = JSON.parse(JSON.stringify(currentState));
+      saveProgress();
+
+      updateProgress();
+      checkRowColCompletion();
+    }
+
+    function resetLevel() {
+      if (!confirm('确定要重置当前关卡吗？')) return;
+
+      const level = LEVELS[currentLevel - 1];
+      currentState = Array(level.size).fill(null).map(() => Array(level.size).fill(0));
+      history = [];
+
+      for (let r = 0; r < level.size; r++) {
+        for (let c = 0; c < level.size; c++) {
+          const cell = $(`cell-${r}-${c}`);
+          if (!cell.classList.contains('revealed')) {
+            cell.classList.remove('filled', 'marked');
+          }
+        }
+      }
+
+      delete levelProgress[currentLevel];
+      saveProgress();
+
+      updateProgress();
+      checkRowColCompletion();
+      showToast('关卡已重置');
+    }
+
+    function checkRowColCompletion() {
+      const level = LEVELS[currentLevel - 1];
+      const size = level.size;
+
+      // Reset all row/col highlights
+      for (let i = 0; i < size; i++) {
+        $(`rh-${i}`)?.classList.remove('row-done');
+        $(`ch-${i}`)?.classList.remove('col-done');
+      }
+
+      // Check rows
+      for (let r = 0; r < size; r++) {
+        const userLine = currentState[r].map(c => {
+          if (c === 1) return 1;
+          if (c === 2) return 0; // Marked counts as empty for hint check
+          return 0;
+        });
+        const userHints = calculateLineHints(userLine);
+        const targetHints = level.rowHints[r];
+
+        if (JSON.stringify(userHints) === JSON.stringify(targetHints)) {
+          $(`rh-${r}`)?.classList.add('row-done');
+        }
+      }
+
+      // Check columns
+      for (let c = 0; c < size; c++) {
+        const col = currentState.map(row => {
+          if (row[c] === 1) return 1;
+          if (row[c] === 2) return 0;
+          return 0;
+        });
+        const userHints = calculateLineHints(col);
+        const targetHints = level.colHints[c];
+
+        if (JSON.stringify(userHints) === JSON.stringify(targetHints)) {
+          $(`ch-${c}`)?.classList.add('col-done');
+        }
+      }
+    }
+
+    function updateProgress() {
+      // Progress bar removed, no-op
+    }
+
+    function checkWin() {
+      const level = LEVELS[currentLevel - 1];
+      const size = level.size;
+
+      // Check if all solution cells are filled correctly
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (level.solution[r][c] === 1 && currentState[r][c] !== 1) {
+            return false;
+          }
+          // Also check that no extra cells are filled
+          if (level.solution[r][c] === 0 && currentState[r][c] === 1) {
+            return false;
+          }
+        }
+      }
+
+      // Win!
+      completedLevels.add(currentLevel);
+      delete levelProgress[currentLevel];
+      saveProgress();
+
+      $('victoryMsg').textContent = `恭喜完成第 ${currentLevel} 关！`;
+      $('victoryOverlay').classList.add('active');
+
+      return true;
+    }
+
+    function nextLevel() {
+      $('victoryOverlay').classList.remove('active');
+
+      if (currentLevel >= 100) {
+        showToast('恭喜你完成了所有关卡！');
+        backToMenu();
+        return;
+      }
+
+      currentLevel++;
+      showScreen('gameScreen');
+      initLevel(currentLevel);
+    }
+
+    function backToMenu() {
+      $('victoryOverlay').classList.remove('active');
+      showScreen('startScreen');
+      updateSavedInfo();
+    }
+
+    function showToast(msg) {
+      const toast = $('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // ============ INIT ============
+    document.addEventListener('DOMContentLoaded', () => {
+      // Generate levels on load
+      LEVELS = generateAllLevels();
+
+      updateSavedInfo();
+
+      // Prevent context menu on mobile
+      document.addEventListener('contextmenu', (e) => {
+        if (e.target.classList.contains('cell')) {
+          e.preventDefault();
+        }
+      });
+    });
+  </script>
+  <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+        ga('create', 'UA-55383282-4', 'auto');
+        ga('send', 'pageview');
+    </script>
+</body>
+
+</html>
