@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Three.js WebGL2 音乐播放器</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --glass: rgba(12, 16, 32, 0.56);
+      --border: rgba(255, 255, 255, 0.16);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.62);
+      --accent: #73fbd3;
+      --hot: #ff4ecd;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #030510;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+    }
+
+    #scene {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .shell {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 20% 12%, rgba(115, 251, 211, 0.18), transparent 28%),
+        radial-gradient(circle at 80% 18%, rgba(255, 78, 205, 0.16), transparent 30%),
+        linear-gradient(180deg, rgba(3, 5, 16, 0.24), rgba(3, 5, 16, 0.76));
+    }
+
+    .topbar,
+    .player {
+      pointer-events: auto;
+      margin: 22px;
+      border: 1px solid var(--border);
+      background: var(--glass);
+      backdrop-filter: blur(20px) saturate(130%);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+    }
+
+    .topbar {
+      align-self: flex-start;
+      max-width: min(620px, calc(100vw - 44px));
+      padding: 18px 20px;
+      border-radius: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(24px, 4vw, 48px);
+      line-height: 1;
+      letter-spacing: -0.05em;
+    }
+
+    .desc {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .player {
+      align-self: center;
+      width: min(920px, calc(100vw - 28px));
+      padding: 16px;
+      border-radius: 30px;
+    }
+
+    .dropzone {
+      display: grid;
+      place-items: center;
+      min-height: 92px;
+      padding: 18px;
+      border: 1px dashed rgba(255, 255, 255, 0.22);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.045);
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+    }
+
+    .dropzone:hover,
+    .dropzone.dragging {
+      border-color: rgba(115, 251, 211, 0.86);
+      background: rgba(115, 251, 211, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .dropzone strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 16px;
+    }
+
+    .dropzone span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 14px;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      color: #061018;
+      background: linear-gradient(135deg, var(--accent), #8ba7ff 48%, var(--hot));
+      border-radius: 999px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 12px 34px rgba(115, 251, 211, 0.22);
+      transition: transform 160ms ease, filter 160ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px) scale(1.02);
+      filter: brightness(1.08);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.42;
+      transform: none;
+    }
+
+    .play {
+      width: 58px;
+      height: 58px;
+      font-size: 22px;
+    }
+
+    .meta {
+      min-width: 0;
+    }
+
+    .title {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+    }
+
+    .sub {
+      margin-top: 5px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      font-size: 13px;
+    }
+
+    .sliders {
+      display: grid;
+      grid-template-columns: minmax(160px, 280px) 112px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 720px) {
+      .topbar,
+      .player {
+        margin: 14px;
+      }
+
+      .controls,
+      .sliders {
+        grid-template-columns: 1fr;
+      }
+
+      .play {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <main class="shell">
+    <section class="topbar">
+      <h1>Neon WebGL2 Player</h1>
+      <p class="desc">本地音频解码 + Web Audio 频谱分析 + Three.js WebGL2 渲染。选择音乐后，环形频谱、粒子星云和中心能量核会实时随节拍变化。</p>
+    </section>
+
+    <section class="player">
+      <label class="dropzone" id="dropzone" for="fileInput">
+        <strong>拖入音乐，或点击选择本地音频</strong>
+        <span>支持 MP3 / WAV / OGG / M4A；音频只在浏览器本地处理</span>
+      </label>
+      <input class="hidden" id="fileInput" type="file" accept="audio/*" />
+
+      <div class="controls">
+        <button class="play" id="playButton" disabled>▶</button>
+        <div class="meta">
+          <div class="title" id="trackTitle">等待载入音乐</div>
+          <input id="seek" type="range" min="0" max="1000" value="0" disabled />
+          <div class="sub"><span id="timeLabel">00:00 / 00:00</span> · <span id="webglLabel">检测 WebGL2 中...</span></div>
+        </div>
+        <div class="sliders">
+          <label>音量 <input id="volume" type="range" min="0" max="1" step="0.01" value="0.82" /></label>
+          <label>强度 <input id="intensity" type="range" min="0.45" max="2.2" step="0.01" value="1.15" /></label>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.164.1/build/three.module.js';
+
+    const canvas = document.querySelector('#scene');
+    const fileInput = document.querySelector('#fileInput');
+    const dropzone = document.querySelector('#dropzone');
+    const playButton = document.querySelector('#playButton');
+    const seek = document.querySelector('#seek');
+    const volume = document.querySelector('#volume');
+    const intensityInput = document.querySelector('#intensity');
+    const trackTitle = document.querySelector('#trackTitle');
+    const timeLabel = document.querySelector('#timeLabel');
+    const webglLabel = document.querySelector('#webglLabel');
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    webglLabel.textContent = renderer.capabilities.isWebGL2 ? 'WebGL2 已启用' : '当前环境回退到 WebGL1';
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x050716, 0.028);
+
+    const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 120);
+    camera.position.set(0, 0, 18);
+
+    const clock = new THREE.Clock();
+    const pointer = new THREE.Vector2();
+    const frequencyBins = 128;
+    const spectrum = new Uint8Array(frequencyBins);
+
+    let audioContext;
+    let gainNode;
+    let analyser;
+    let mediaSourceNode;
+    let audioElement;
+    let duration = 0;
+    let isPlaying = false;
+    let activeUrl;
+    let averageEnergy = 0;
+
+    const coreUniforms = {
+      uTime: { value: 0 },
+      uEnergy: { value: 0 },
+      uBass: { value: 0 },
+      uTreble: { value: 0 },
+      uColorA: { value: new THREE.Color('#73fbd3') },
+      uColorB: { value: new THREE.Color('#ff4ecd') }
+    };
+
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(2.35, 128, 128),
+      new THREE.ShaderMaterial({
+        uniforms: coreUniforms,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        vertexShader: `
+          uniform float uTime;
+          uniform float uEnergy;
+          uniform float uBass;
+          varying vec3 vNormal;
+          varying vec3 vPosition;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vPosition = position;
+            float swirl = sin(position.x * 5.0 + uTime * 2.1) * cos(position.y * 4.2 - uTime * 1.6);
+            float ripple = sin(length(position.xy) * 8.0 - uTime * 5.0);
+            float pulse = 1.0 + uEnergy * 0.42 + uBass * 0.28 + swirl * 0.08 + ripple * 0.06;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position * pulse, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          uniform float uEnergy;
+          uniform float uTreble;
+          uniform vec3 uColorA;
+          uniform vec3 uColorB;
+          varying vec3 vNormal;
+          varying vec3 vPosition;
+          void main() {
+            float fresnel = pow(1.0 - max(dot(vNormal, vec3(0.0, 0.0, 1.0)), 0.0), 2.8);
+            float veins = sin(vPosition.x * 9.0 + vPosition.y * 4.0 + uTime * 3.0) * 0.5 + 0.5;
+            float glow = smoothstep(0.18, 1.0, fresnel + uEnergy * 0.55);
+            vec3 color = mix(uColorA, uColorB, veins + uTreble * 0.45);
+            gl_FragColor = vec4(color * (0.45 + glow * 2.8), 0.2 + glow * 0.68);
+          }
+        `
+      })
+    );
+    scene.add(core);
+
+    const terrainWidth = 96;
+    const terrainDepth = 34;
+    const terrainGeometry = new THREE.PlaneGeometry(28, 16, terrainWidth - 1, terrainDepth - 1);
+    terrainGeometry.rotateX(-Math.PI / 2);
+    terrainGeometry.translate(0, -4.6, -5);
+    const terrainBase = terrainGeometry.attributes.position.array.slice();
+    const terrainMaterial = new THREE.MeshBasicMaterial({ color: 0x55ffe0, wireframe: true, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending });
+    const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
+    scene.add(terrain);
+
+    const ribbonCount = 9;
+    const ribbonSegments = 160;
+    const ribbons = [];
+    for (let r = 0; r < ribbonCount; r++) {
+      const points = new Float32Array(ribbonSegments * 3);
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(points, 3));
+      const material = new THREE.LineBasicMaterial({
+        color: new THREE.Color().setHSL(0.55 + r * 0.045, 0.95, 0.62),
+        transparent: true,
+        opacity: 0.42,
+        blending: THREE.AdditiveBlending
+      });
+      const line = new THREE.Line(geometry, material);
+      ribbons.push(line);
+      scene.add(line);
+    }
+
+    const starCount = 3200;
+    const starPositions = new Float32Array(starCount * 3);
+    const starColors = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      const radius = 8 + Math.random() * 52;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(Math.random() * 2 - 1);
+      starPositions[i * 3] = Math.sin(phi) * Math.cos(theta) * radius;
+      starPositions[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * radius;
+      starPositions[i * 3 + 2] = Math.cos(phi) * radius;
+      const color = new THREE.Color().setHSL(0.48 + Math.random() * 0.36, 0.88, 0.55 + Math.random() * 0.3);
+      starColors.set([color.r, color.g, color.b], i * 3);
+    }
+
+    const starGeometry = new THREE.BufferGeometry();
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+    const stars = new THREE.Points(
+      starGeometry,
+      new THREE.PointsMaterial({ size: 0.055, vertexColors: true, transparent: true, opacity: 0.72, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    scene.add(stars);
+
+    const bloomShell = new THREE.Mesh(
+      new THREE.SphereGeometry(3.8, 96, 96),
+      new THREE.MeshBasicMaterial({ color: 0xff4ecd, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    scene.add(bloomShell);
+
+    function ensureAudio() {
+      if (!audioContext) {
+        audioContext = new AudioContext();
+        gainNode = audioContext.createGain();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = frequencyBins * 2;
+        analyser.smoothingTimeConstant = 0.82;
+        gainNode.gain.value = Number(volume.value);
+        gainNode.connect(analyser);
+        analyser.connect(audioContext.destination);
+      }
+      if (!audioElement) {
+        audioElement = new Audio();
+        audioElement.preload = 'metadata';
+        audioElement.crossOrigin = 'anonymous';
+        mediaSourceNode = audioContext.createMediaElementSource(audioElement);
+        mediaSourceNode.connect(gainNode);
+        audioElement.addEventListener('ended', () => {
+          isPlaying = false;
+          playButton.textContent = '▶';
+          seek.value = 0;
+        });
+        audioElement.addEventListener('loadedmetadata', () => {
+          duration = audioElement.duration || 0;
+          updateTimeLabel(audioElement.currentTime || 0, duration);
+        });
+        audioElement.addEventListener('error', () => {
+          isPlaying = false;
+          playButton.textContent = '▶';
+          trackTitle.textContent = '浏览器无法播放这个音频格式，请换 MP3/WAV/OGG';
+        });
+      }
+      return audioContext;
+    }
+
+    async function loadFile(file) {
+      stopPlayback();
+      ensureAudio();
+      if (activeUrl) URL.revokeObjectURL(activeUrl);
+      activeUrl = URL.createObjectURL(file);
+      audioElement.src = activeUrl;
+      audioElement.currentTime = 0;
+      duration = 0;
+      seek.value = 0;
+      seek.disabled = false;
+      playButton.disabled = false;
+      playButton.textContent = '▶';
+      trackTitle.textContent = file.name;
+      updateTimeLabel(0, 0);
+      audioElement.load();
+    }
+
+    async function togglePlayback() {
+      if (!audioElement?.src) return;
+      ensureAudio();
+      if (audioContext.state === 'suspended') await audioContext.resume();
+      if (isPlaying) {
+        audioElement.pause();
+        isPlaying = false;
+        playButton.textContent = '▶';
+        return;
+      }
+      await audioElement.play();
+      isPlaying = true;
+      playButton.textContent = 'Ⅱ';
+    }
+
+    function stopPlayback(reset = false) {
+      if (audioElement) audioElement.pause();
+      isPlaying = false;
+      if (reset) {
+        if (audioElement) audioElement.currentTime = 0;
+        seek.value = 0;
+        playButton.textContent = '▶';
+      }
+    }
+
+    function getCurrentTime() {
+      return audioElement?.currentTime || 0;
+    }
+
+    function formatTime(seconds) {
+      const safe = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
+      const minutes = Math.floor(safe / 60).toString().padStart(2, '0');
+      const rest = Math.floor(safe % 60).toString().padStart(2, '0');
+      return `${minutes}:${rest}`;
+    }
+
+    function updateTimeLabel(current, duration) {
+      timeLabel.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+    }
+
+    function updateSpectrum() {
+      if (analyser && isPlaying) {
+        analyser.getByteFrequencyData(spectrum);
+      } else {
+        for (let i = 0; i < spectrum.length; i++) spectrum[i] *= 0.94;
+      }
+
+      let sum = 0;
+      let bass = 0;
+      let treble = 0;
+      for (let i = 0; i < frequencyBins; i++) {
+        const value = spectrum[i] / 255;
+        sum += value;
+        if (i < 14) bass += value / 14;
+        if (i > frequencyBins * 0.64) treble += value / (frequencyBins * 0.36);
+      }
+      averageEnergy = THREE.MathUtils.lerp(averageEnergy, sum / frequencyBins, 0.13);
+      coreUniforms.uEnergy.value = averageEnergy * Number(intensityInput.value);
+      coreUniforms.uBass.value = bass * Number(intensityInput.value);
+      coreUniforms.uTreble.value = treble * Number(intensityInput.value);
+    }
+
+    function updateVisuals(time) {
+      const boost = Number(intensityInput.value);
+      const positions = terrainGeometry.attributes.position;
+      for (let i = 0; i < positions.count; i++) {
+        const x = terrainBase[i * 3];
+        const z = terrainBase[i * 3 + 2];
+        const band = Math.min(frequencyBins - 1, Math.floor(Math.abs(x / 14) * frequencyBins));
+        const value = spectrum[band] / 255;
+        const wave = Math.sin(z * 1.4 + time * 2.2) * Math.cos(x * 0.55 - time * 1.6);
+        positions.setY(i, terrainBase[i * 3 + 1] + wave * 0.35 + Math.pow(value, 1.35) * 3.2 * boost);
+      }
+      positions.needsUpdate = true;
+      terrainMaterial.opacity = 0.18 + averageEnergy * 0.34;
+      terrainMaterial.color.setHSL((0.48 + averageEnergy * 0.24) % 1, 0.96, 0.58);
+
+      for (let r = 0; r < ribbons.length; r++) {
+        const line = ribbons[r];
+        const attr = line.geometry.attributes.position;
+        const phase = r / ribbons.length;
+        for (let i = 0; i < ribbonSegments; i++) {
+          const t = i / (ribbonSegments - 1);
+          const band = Math.min(frequencyBins - 1, Math.floor(t * frequencyBins));
+          const value = spectrum[band] / 255;
+          const angle = t * Math.PI * 2.8 + phase * Math.PI * 2 + time * (0.18 + phase * 0.18);
+          const radius = 3.2 + phase * 5.2 + value * 2.8 * boost;
+          const y = Math.sin(t * Math.PI * 6 + time * 1.8 + r) * (0.35 + value * 1.2) + (phase - 0.5) * 4;
+          attr.setXYZ(i, Math.cos(angle) * radius, y, Math.sin(angle) * radius - 3.5);
+        }
+        attr.needsUpdate = true;
+        line.material.opacity = 0.18 + averageEnergy * 0.66;
+        line.material.color.setHSL((0.58 + phase * 0.22 + time * 0.025) % 1, 0.95, 0.62);
+      }
+
+      bloomShell.scale.setScalar(1 + averageEnergy * 0.7 + coreUniforms.uBass.value * 0.18);
+      bloomShell.material.opacity = 0.06 + averageEnergy * 0.2;
+    }
+
+    function updateUi() {
+      if (!audioElement?.src) return;
+      const current = getCurrentTime();
+      duration = audioElement.duration || duration || 0;
+      updateTimeLabel(current, duration);
+      if (!seek.matches(':active')) {
+        seek.value = String((current / duration) * 1000 || 0);
+      }
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const time = clock.getElapsedTime();
+      updateSpectrum();
+      updateVisuals(time);
+      updateUi();
+
+      coreUniforms.uTime.value = time;
+      core.rotation.x = Math.sin(time * 0.31) * 0.22 + pointer.y * 0.18;
+      core.rotation.y = time * 0.26 + pointer.x * 0.28;
+      bloomShell.rotation.copy(core.rotation);
+      stars.rotation.y = time * (0.012 + averageEnergy * 0.035) + pointer.x * 0.04;
+      stars.rotation.x = pointer.y * 0.025;
+      camera.position.x = THREE.MathUtils.lerp(camera.position.x, pointer.x * 1.6, 0.04);
+      camera.position.y = THREE.MathUtils.lerp(camera.position.y, -pointer.y * 1.0 + averageEnergy * 0.8, 0.04);
+      camera.position.z = THREE.MathUtils.lerp(camera.position.z, 18 - averageEnergy * 2.2, 0.04);
+      camera.lookAt(0, 0, 0);
+      renderer.render(scene, camera);
+    }
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files?.[0];
+      if (file) loadFile(file).catch((error) => {
+        trackTitle.textContent = '音频解码失败，请换一个文件';
+        console.error(error);
+      });
+    });
+
+    dropzone.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      dropzone.classList.add('dragging');
+    });
+
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragging'));
+
+    dropzone.addEventListener('drop', (event) => {
+      event.preventDefault();
+      dropzone.classList.remove('dragging');
+      const file = [...event.dataTransfer.files].find((item) => item.type.startsWith('audio/'));
+      if (file) loadFile(file).catch((error) => {
+        trackTitle.textContent = '音频解码失败，请换一个文件';
+        console.error(error);
+      });
+    });
+
+    playButton.addEventListener('click', togglePlayback);
+
+    volume.addEventListener('input', () => {
+      ensureAudio();
+      gainNode.gain.value = Number(volume.value);
+    });
+
+    seek.addEventListener('input', () => {
+      if (!audioElement?.src || !duration) return;
+      const nextTime = (Number(seek.value) / 1000) * duration;
+      updateTimeLabel(nextTime, duration);
+    });
+
+    seek.addEventListener('change', () => {
+      if (!audioElement?.src || !duration) return;
+      audioElement.currentTime = (Number(seek.value) / 1000) * duration;
+    });
+
+    window.addEventListener('pointermove', (event) => {
+      pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = (event.clientY / window.innerHeight) * 2 - 1;
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
