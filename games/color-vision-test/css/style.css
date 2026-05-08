@@ -1,0 +1,341 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+    --bg-a: #042f2e;
+    --bg-b: #0f172a;
+    --card: rgba(255, 255, 255, 0.92);
+    --soft: rgba(255, 255, 255, 0.16);
+    --text: #0f172a;
+    --muted: #64748b;
+    --primary: #0f766e;
+    --primary-2: #14b8a6;
+    --warn: #f59e0b;
+    --danger: #e11d48;
+    --ok: #16a34a;
+    --line: rgba(15, 23, 42, 0.12);
+    --shadow: 0 28px 90px rgba(2, 6, 23, 0.38);
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background:
+        radial-gradient(circle at 16% 12%, rgba(20, 184, 166, 0.38), transparent 28%),
+        radial-gradient(circle at 86% 18%, rgba(56, 189, 248, 0.24), transparent 32%),
+        linear-gradient(135deg, var(--bg-a), var(--bg-b));
+    color: #fff;
+    user-select: none;
+    touch-action: manipulation;
+}
+
+button {
+    border: 0;
+    font: inherit;
+    cursor: pointer;
+}
+
+#app {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: clamp(14px, 3vw, 28px);
+}
+
+.screen {
+    display: none;
+    width: min(100%, 760px);
+}
+
+.screen.active {
+    display: block;
+}
+
+.card,
+.panel {
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 32px;
+    background: var(--card);
+    color: var(--text);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(20px);
+}
+
+.hero,
+.result-card {
+    padding: clamp(24px, 5vw, 44px);
+    text-align: center;
+}
+
+.eyebrow {
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+h1 {
+    margin-top: 10px;
+    font-size: clamp(36px, 8vw, 66px);
+    line-height: 1;
+    letter-spacing: -0.06em;
+}
+
+h2 {
+    font-size: clamp(22px, 5vw, 34px);
+    letter-spacing: -0.04em;
+}
+
+.lead {
+    max-width: 600px;
+    margin: 16px auto 0;
+    color: #475569;
+    line-height: 1.75;
+}
+
+.notice {
+    margin: 22px auto 0;
+    max-width: 620px;
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    border: 1px solid #fed7aa;
+    border-radius: 20px;
+    background: #fff7ed;
+    color: #9a3412;
+    text-align: left;
+    line-height: 1.65;
+}
+
+.rules,
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 24px 0;
+}
+
+.rules article,
+.summary-grid article {
+    padding: 16px 12px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: #f8fafc;
+}
+
+.rules b,
+.summary-grid b {
+    display: block;
+    color: var(--primary);
+    font-size: 24px;
+}
+
+.rules span,
+.summary-grid span {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.btn {
+    min-height: 52px;
+    border-radius: 18px;
+    padding: 0 26px;
+    font-weight: 900;
+    color: #fff;
+    transition: transform 0.16s ease, filter 0.16s ease;
+}
+
+.btn:active {
+    transform: scale(0.96);
+}
+
+.btn.primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-2));
+    box-shadow: 0 16px 34px rgba(15, 118, 110, 0.28);
+}
+
+.btn.ghost {
+    width: 100%;
+    margin-top: 12px;
+    color: #334155;
+    background: #e2e8f0;
+}
+
+.panel {
+    padding: clamp(14px, 3vw, 24px);
+}
+
+.hud {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.hud div {
+    padding: 12px;
+    border-radius: 18px;
+    background: #f1f5f9;
+    text-align: center;
+}
+
+.hud b {
+    display: block;
+    color: var(--primary);
+    font-size: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.hud span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.bar {
+    height: 10px;
+    margin: 14px 0 18px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e2e8f0;
+}
+
+#barFill {
+    width: 0%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--primary), #38bdf8);
+    transition: width 0.25s ease;
+}
+
+.question {
+    text-align: center;
+}
+
+#hintText {
+    margin-top: 6px;
+    color: var(--muted);
+}
+
+#plate {
+    display: block;
+    width: min(100%, 520px);
+    aspect-ratio: 1;
+    margin: 18px auto;
+    border-radius: 999px;
+    background: #f8fafc;
+    box-shadow: inset 0 0 0 1px var(--line), 0 20px 46px rgba(15, 23, 42, 0.14);
+}
+
+.options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.option {
+    min-height: 54px;
+    border-radius: 18px;
+    background: #f8fafc;
+    color: var(--text);
+    border: 1px solid #cbd5e1;
+    font-weight: 900;
+}
+
+.option.correct {
+    color: #fff;
+    background: var(--ok);
+    border-color: var(--ok);
+}
+
+.option.wrong {
+    color: #fff;
+    background: var(--danger);
+    border-color: var(--danger);
+}
+
+.axis-report {
+    display: grid;
+    gap: 12px;
+    margin: 18px 0;
+    text-align: left;
+}
+
+.axis-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 92px;
+    gap: 12px;
+    align-items: center;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: #fff;
+}
+
+.axis-row strong {
+    color: #0f172a;
+}
+
+.axis-bar {
+    height: 12px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e2e8f0;
+}
+
+.axis-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--primary), var(--ok));
+}
+
+.axis-score {
+    color: var(--primary);
+    font-weight: 950;
+    text-align: right;
+}
+
+.deep-btn {
+    grid-column: 1 / -1;
+    min-height: 42px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-2));
+    color: #fff;
+    font-weight: 900;
+}
+
+.recommendation {
+    padding: 16px;
+    border-radius: 20px;
+    background: #eef2ff;
+    color: #334155;
+    line-height: 1.75;
+    text-align: left;
+}
+
+@media (max-width: 560px) {
+    .rules,
+    .summary-grid,
+    .hud,
+    .options {
+        grid-template-columns: 1fr;
+    }
+
+    .axis-row {
+        grid-template-columns: 1fr;
+    }
+
+    .axis-score {
+        text-align: left;
+    }
+}
