@@ -492,6 +492,7 @@
                 state.answers = pickAnswers(count);
                 state.picks = [];
                 state.locked = false;
+                unsureBtn.textContent = '看不出来';
 
                 roundText.textContent = state.round;
                 familyText.textContent = family.name;
@@ -528,6 +529,7 @@
                     state.picks.splice(existing, 1);
                     cell.classList.remove('pick');
                     message.textContent = `${state.current.name}：已选择 ${state.picks.length}/${TARGET_COUNT} 个。`;
+                    unsureBtn.textContent = state.picks.length > 0 ? '提交当前选择' : '看不出来';
                     return;
                 }
 
@@ -535,13 +537,18 @@
                 state.picks.push(index);
                 cell.classList.add('pick');
                 message.textContent = `${state.current.name}：已选择 ${state.picks.length}/${TARGET_COUNT} 个。`;
+                unsureBtn.textContent = '提交当前选择';
 
                 if (state.picks.length === TARGET_COUNT) {
                     state.locked = true;
-                    const fineHit = state.picks.includes(state.answers[0]);
-                    const anchorHit = state.picks.includes(state.answers[1]);
-                    record({ fineHit, anchorHit });
+                    submitPicks();
                 }
+            }
+
+            function submitPicks() {
+                const fineHit = state.picks.includes(state.answers[0]);
+                const anchorHit = state.picks.includes(state.answers[1]);
+                record({ fineHit, anchorHit });
             }
 
             function normalizeBounds(family) {
@@ -832,7 +839,7 @@
             unsureBtn.addEventListener('click', () => {
                 if (state.locked) return;
                 state.locked = true;
-                record(false, 0);
+                submitPicks();
             });
             restartBtn.addEventListener('click', restart);
             againBtn.addEventListener('click', restart);
