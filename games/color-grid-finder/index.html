@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2563EB">
+    <title>多色系最小色度差测试</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --bg-a: #0F172A;
+            --bg-b: #1E3A8A;
+            --card: rgba(255, 255, 255, 0.12);
+            --line: rgba(255, 255, 255, 0.18);
+            --text: #F8FAFC;
+            --muted: rgba(248, 250, 252, 0.72);
+            --soft: rgba(255, 255, 255, 0.16);
+            --ok: #34D399;
+            --warn: #FBBF24;
+            --accent: #93C5FD;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 18% 14%, rgba(56, 189, 248, 0.34), transparent 30%),
+                radial-gradient(circle at 86% 12%, rgba(167, 139, 250, 0.30), transparent 32%),
+                linear-gradient(145deg, var(--bg-a), var(--bg-b));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .app {
+            width: min(100%, 580px);
+            min-height: min(900px, calc(100vh - 32px));
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .panel {
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            background: var(--card);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+            backdrop-filter: blur(18px);
+        }
+        header { padding: 20px 20px 16px; }
+        h1 { margin: 0; font-size: clamp(25px, 7vw, 40px); letter-spacing: -1px; }
+        .subtitle { margin: 10px 0 0; color: var(--muted); line-height: 1.55; font-size: 14px; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 0 20px 18px;
+        }
+        .stat {
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 11px 8px;
+            background: rgba(255, 255, 255, 0.10);
+            text-align: center;
+        }
+        .stat b { display: block; font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .stat span { color: var(--muted); font-size: 12px; }
+        .test {
+            padding: 18px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .topline {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .round-title { font-weight: 900; font-size: 18px; }
+        .message { margin-top: 4px; color: var(--muted); font-size: 14px; line-height: 1.45; }
+        .badge {
+            border-radius: 999px;
+            padding: 7px 10px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .meter { height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+        .meter-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #60A5FA, #A78BFA, #34D399);
+            transition: width 0.25s ease;
+        }
+        .family-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+        .family-dot {
+            height: 8px;
+            border-radius: 999px;
+            opacity: 0.36;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+        }
+        .family-dot.active { opacity: 1; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.34); }
+        .family-dot.stable { opacity: 1; box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.58); }
+        .grid-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 6px 0;
+        }
+        .hidden { display: none !important; }
+        .grid {
+            width: min(100%, 470px, calc(100vw - 52px));
+            aspect-ratio: 1;
+            display: grid;
+            gap: var(--gap, 8px);
+            padding: var(--gap, 8px);
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid var(--line);
+            box-shadow: inset 0 1px 18px rgba(255, 255, 255, 0.08);
+        }
+        .cell {
+            border: 0;
+            border-radius: clamp(7px, 2.2vw, 16px);
+            cursor: pointer;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 8px 18px rgba(0, 0, 0, 0.11);
+            transition: transform 0.12s ease, outline 0.12s ease, filter 0.12s ease;
+        }
+        .cell:active { transform: scale(0.94); }
+        .cell.answer { outline: 4px solid rgba(52, 211, 153, 0.95); filter: brightness(1.08) saturate(1.15); }
+        .cell.pick { outline: 4px solid rgba(255, 255, 255, 0.95); }
+        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button.action {
+            min-height: 48px;
+            border: 0;
+            border-radius: 16px;
+            font-weight: 900;
+            color: #0F172A;
+            background: #F8FAFC;
+            cursor: pointer;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+        }
+        button.secondary { color: var(--text); background: var(--soft); border: 1px solid var(--line); }
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.74);
+            backdrop-filter: blur(8px);
+        }
+        .modal.show { display: flex; }
+        .modal-card {
+            width: min(100%, 760px);
+            max-height: min(88vh, 860px);
+            overflow: auto;
+            padding: 24px;
+            border-radius: 28px;
+            background: #F8FAFC;
+            color: #0F172A;
+            box-shadow: 0 28px 90px rgba(0, 0, 0, 0.38);
+        }
+        .modal-card h2 { margin: 0 0 10px; font-size: 28px; text-align: center; }
+        .modal-lead { margin: 0 auto 18px; color: #475569; line-height: 1.65; text-align: center; max-width: 620px; }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 18px 0;
+        }
+        .grade-card {
+            border-radius: 22px;
+            padding: 18px;
+            background: linear-gradient(135deg, #DBEAFE, #DCFCE7);
+            border: 1px solid #BFDBFE;
+            text-align: center;
+            margin: 16px 0;
+        }
+        .grade-label {
+            color: #475569;
+            font-size: 13px;
+            font-weight: 800;
+        }
+        .grade-title {
+            margin-top: 6px;
+            color: #1D4ED8;
+            font-size: clamp(26px, 7vw, 42px);
+            font-weight: 950;
+            letter-spacing: -1px;
+        }
+        .grade-desc {
+            margin-top: 8px;
+            color: #334155;
+            line-height: 1.65;
+            font-size: 14px;
+        }
+        .summary-card {
+            border-radius: 18px;
+            padding: 14px 10px;
+            background: #E0F2FE;
+            text-align: center;
+        }
+        .summary-card b { display: block; color: #1D4ED8; font-size: 20px; }
+        .summary-card span { color: #475569; font-size: 12px; }
+        .report-list { display: grid; gap: 10px; margin: 16px 0; }
+        .report-item {
+            display: grid;
+            grid-template-columns: 108px 1fr 76px;
+            gap: 12px;
+            align-items: center;
+            border: 1px solid #CBD5E1;
+            border-radius: 18px;
+            padding: 12px;
+            background: #FFFFFF;
+        }
+        .report-name { font-weight: 900; }
+        .report-sub { margin-top: 4px; color: #64748B; font-size: 12px; line-height: 1.45; }
+        .bar {
+            height: 10px;
+            border-radius: 999px;
+            background: #E2E8F0;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #2563EB, #34D399);
+        }
+        .score-value { font-weight: 950; color: #1D4ED8; text-align: right; }
+        .analysis-box {
+            border-radius: 18px;
+            background: #EEF2FF;
+            color: #334155;
+            padding: 14px;
+            line-height: 1.7;
+            font-size: 14px;
+        }
+        .notice-box {
+            margin-top: 10px;
+            border-radius: 18px;
+            background: #FFF7ED;
+            color: #9A3412;
+            padding: 12px 14px;
+            line-height: 1.65;
+            font-size: 13px;
+        }
+        .again { width: 100%; margin-top: 16px; }
+        @media (max-width: 520px) {
+            .stats, .summary-grid { grid-template-columns: repeat(2, 1fr); }
+            .report-item { grid-template-columns: 1fr; }
+            .score-value { text-align: left; }
+        }
+        @media (max-height: 720px) {
+            body { padding: 10px; }
+            .app { gap: 10px; min-height: calc(100vh - 20px); }
+            header { padding: 14px 16px 10px; }
+            .stats { padding: 0 16px 12px; }
+            .test { padding: 14px; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="app">
+        <section class="panel">
+            <header>
+                <h1>多色系最小色度差测试</h1>
+                <p class="subtitle">测试会覆盖红、黄、蓝、绿 4 个基础色系。每轮从多个颜色格中找出 2 个不同色，用更少色系换取更稳定的单项结果。</p>
+            </header>
+            <div class="stats">
+                <div class="stat"><b id="roundText">1</b><span>测试进度</span></div>
+                <div class="stat"><b id="familyText">红色系</b><span>当前色系</span></div>
+                <div class="stat"><b id="deltaText">12.0</b><span>当前色度差</span></div>
+                <div class="stat"><b id="stableText">0/4</b><span>色系进度</span></div>
+            </div>
+        </section>
+
+        <section class="panel test">
+            <div class="topline">
+                <div>
+                    <div class="round-title" id="stageTitle">校准中</div>
+                    <div class="message" id="message">请选择 2 个你觉得颜色不一样的格子。</div>
+                </div>
+                <span class="badge" id="modeText">16选2</span>
+            </div>
+            <div class="meter"><div class="meter-fill" id="meterFill"></div></div>
+            <div class="family-strip" id="familyStrip"></div>
+            <div class="grid-wrap">
+                <div class="grid" id="grid"></div>
+            </div>
+            <div class="actions">
+                <button class="action secondary" id="unsureBtn">看不出来</button>
+                <button class="action" id="restartBtn">重新测试</button>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal" id="modal">
+        <div class="modal-card">
+            <h2>综合色度感知分析报告</h2>
+            <p class="modal-lead" id="reportLead"></p>
+            <div class="grade-card" id="gradeCard"></div>
+            <div class="summary-grid" id="summaryGrid"></div>
+            <div class="report-list" id="reportList"></div>
+            <div class="analysis-box" id="analysisBox"></div>
+            <div class="notice-box" id="noticeBox"></div>
+            <button class="action again" id="againBtn">再测一次</button>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            'use strict';
+
+            const FAMILIES = [
+                { id: 'red', name: '红色系', hue: 0 },
+                { id: 'yellow', name: '黄色系', hue: 58 },
+                { id: 'blue', name: '蓝色系', hue: 222 },
+                { id: 'green', name: '绿色系', hue: 125 },
+            ];
+            const TARGET_COUNT = 2;
+            const ANCHOR_MULTIPLIER = 1.85;
+            const MIN_FAMILY_SAMPLES = 5;
+            const QUICK_STABLE_RANGE = 3.2;
+            const LOOSE_STABLE_RANGE = 5;
+            const MAX_RECHECK_SAMPLES = 7;
+
+            const roundText = document.getElementById('roundText');
+            const familyText = document.getElementById('familyText');
+            const deltaText = document.getElementById('deltaText');
+            const stableText = document.getElementById('stableText');
+            const stageTitle = document.getElementById('stageTitle');
+            const message = document.getElementById('message');
+            const modeText = document.getElementById('modeText');
+            const meterFill = document.getElementById('meterFill');
+            const familyStrip = document.getElementById('familyStrip');
+            const grid = document.getElementById('grid');
+            const unsureBtn = document.getElementById('unsureBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            const modal = document.getElementById('modal');
+            const reportLead = document.getElementById('reportLead');
+            const gradeCard = document.getElementById('gradeCard');
+            const summaryGrid = document.getElementById('summaryGrid');
+            const reportList = document.getElementById('reportList');
+            const analysisBox = document.getElementById('analysisBox');
+            const noticeBox = document.getElementById('noticeBox');
+            const againBtn = document.getElementById('againBtn');
+
+            const state = {
+                round: 1,
+                answers: [],
+                picks: [],
+                locked: false,
+                current: null,
+                families: [],
+            };
+
+            function resetFamilies() {
+                state.families = FAMILIES.map(item => ({
+                    ...item,
+                    low: 0,
+                    high: null,
+                    delta: 12,
+                    records: [],
+                }));
+            }
+
+            function clamp(v, min, max) {
+                return Math.max(min, Math.min(max, v));
+            }
+
+            function wrapHue(v) {
+                return ((v % 360) + 360) % 360;
+            }
+
+            function hsl(h, s, l) {
+                return `hsl(${Math.round(wrapHue(h))} ${Math.round(s)}% ${Math.round(l)}%)`;
+            }
+
+            function lightOffset(family) {
+                if (family.id === 'green') return -10;
+                if (family.id === 'red') return -7;
+                return -5;
+            }
+
+            function pickAnswers(count) {
+                const answers = [];
+                while (answers.length < TARGET_COUNT) {
+                    const candidate = Math.floor(Math.random() * count);
+                    if (!answers.includes(candidate)) answers.push(candidate);
+                }
+                return answers;
+            }
+
+            function gridSize() {
+                const stable = stableCount();
+                if (state.round <= 12) return 4;
+                if (state.round <= 32 || stable < 3) return 5;
+                if (state.round <= 56 || stable < FAMILIES.length) return 6;
+                return 7;
+            }
+
+            function isMaxedOut(family) {
+                return family.high === null && family.records.length >= MAX_RECHECK_SAMPLES && family.delta >= 80;
+            }
+
+            function isPartialPlateau(family) {
+                return family.high === null
+                    && family.records.length >= MAX_RECHECK_SAMPLES
+                    && family.records.some(item => item.hitCount > 0);
+            }
+
+            function isStable(family) {
+                if (isMaxedOut(family) || isPartialPlateau(family)) return true;
+                if (family.records.length < MIN_FAMILY_SAMPLES) return false;
+                if (family.high === null) return false;
+                if (family.high <= 0.45) return true;
+                const range = family.high - family.low;
+                if (range <= QUICK_STABLE_RANGE) return true;
+                return family.records.length >= MAX_RECHECK_SAMPLES && range <= LOOSE_STABLE_RANGE;
+            }
+
+            function stableCount() {
+                return state.families.filter(isStable).length;
+            }
+
+            function estimateOf(family) {
+                if (family.high !== null) return family.high;
+                if (isMaxedOut(family) || isPartialPlateau(family)) return family.delta;
+                return null;
+            }
+
+            function chooseFamily() {
+                const pending = state.families.filter(family => !isStable(family));
+                if (pending.length === 0) return null;
+                const unsampled = pending.filter(family => family.records.length < MIN_FAMILY_SAMPLES);
+                const pool = unsampled.length > 0 ? unsampled : pending;
+                pool.sort((a, b) => {
+                    const ar = a.records.length;
+                    const br = b.records.length;
+                    if (ar !== br) return ar - br;
+                    const au = a.high === null ? 999 : a.high - a.low;
+                    const bu = b.high === null ? 999 : b.high - b.low;
+                    return bu - au;
+                });
+                return pool[0];
+            }
+
+            function renderStrip() {
+                familyStrip.innerHTML = '';
+                state.families.forEach(family => {
+                    const dot = document.createElement('span');
+                    dot.className = 'family-dot';
+                    dot.style.background = hsl(family.hue, 68, 54);
+                    if (state.current && state.current.id === family.id) dot.classList.add('active');
+                    if (isStable(family)) dot.classList.add('stable');
+                    dot.title = family.name;
+                    familyStrip.appendChild(dot);
+                });
+            }
+
+            function render() {
+                state.current = chooseFamily();
+                if (!state.current) {
+                    finish();
+                    return;
+                }
+
+                const family = state.current;
+                const size = gridSize();
+                const count = size * size;
+                const baseHue = family.hue + (Math.random() * 8 - 4);
+                const baseSat = clamp(62 + Math.sin(state.round * 1.7 + family.hue) * 8, 50, 74);
+                const baseLight = clamp(49 + Math.cos(state.round * 0.9 + family.hue) * 4 + lightOffset(family), 34, 54);
+                const direction = state.round % 2 === 0 ? 1 : -1;
+                const targetHues = [
+                    baseHue + direction * family.delta,
+                    baseHue - direction * family.delta * ANCHOR_MULTIPLIER,
+                ];
+
+                state.answers = pickAnswers(count);
+                state.picks = [];
+                state.locked = false;
+
+                roundText.textContent = state.round;
+                familyText.textContent = family.name;
+                deltaText.textContent = family.delta.toFixed(1);
+                stableText.textContent = `${stableCount()}/${FAMILIES.length}`;
+                stageTitle.textContent = '多格观察';
+                message.textContent = `${family.name}：请选择 ${TARGET_COUNT} 个你觉得颜色不一样的格子。`;
+                modeText.textContent = `${count}选${TARGET_COUNT}`;
+                meterFill.style.width = `${(stableCount() / FAMILIES.length) * 100}%`;
+                renderStrip();
+
+                grid.innerHTML = '';
+                grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+                grid.style.setProperty('--gap', size >= 7 ? '4px' : size >= 6 ? '5px' : size >= 5 ? '6px' : '8px');
+
+                for (let i = 0; i < count; i++) {
+                    const cell = document.createElement('button');
+                    cell.type = 'button';
+                    cell.className = 'cell';
+                    const answerIndex = state.answers.indexOf(i);
+                    cell.style.background = answerIndex >= 0
+                        ? hsl(targetHues[answerIndex], baseSat, baseLight)
+                        : hsl(baseHue, baseSat, baseLight);
+                    cell.setAttribute('aria-label', `第 ${i + 1} 个颜色格`);
+                    cell.addEventListener('click', () => choose(i, cell));
+                    grid.appendChild(cell);
+                }
+            }
+
+            function choose(index, cell) {
+                if (state.locked) return;
+                const existing = state.picks.indexOf(index);
+                if (existing >= 0) {
+                    state.picks.splice(existing, 1);
+                    cell.classList.remove('pick');
+                    message.textContent = `${state.current.name}：已选择 ${state.picks.length}/${TARGET_COUNT} 个。`;
+                    return;
+                }
+
+                if (state.picks.length >= TARGET_COUNT) return;
+                state.picks.push(index);
+                cell.classList.add('pick');
+                message.textContent = `${state.current.name}：已选择 ${state.picks.length}/${TARGET_COUNT} 个。`;
+
+                if (state.picks.length === TARGET_COUNT) {
+                    state.locked = true;
+                    const fineHit = state.picks.includes(state.answers[0]);
+                    const anchorHit = state.picks.includes(state.answers[1]);
+                    record({ fineHit, anchorHit });
+                }
+            }
+
+            function normalizeBounds(family) {
+                if (family.high === null || family.low < family.high) return;
+                const center = (family.low + family.high) / 2;
+                family.low = Math.max(0, center - 0.75);
+                family.high = center + 0.75;
+            }
+
+            function nextDelta(family, result) {
+                const previous = family.delta;
+                const correct = result.fineHit && result.anchorHit;
+                const partial = result.fineHit || result.anchorHit;
+                if (correct) {
+                    family.high = family.high === null ? previous : Math.min(family.high, previous);
+                } else if (result.fineHit) {
+                    family.high = family.high === null ? previous : Math.min(family.high, previous);
+                    family.low = Math.max(family.low, previous * 0.45);
+                } else if (result.anchorHit) {
+                    family.low = Math.max(family.low, previous);
+                    const anchorHigh = previous * ANCHOR_MULTIPLIER;
+                    family.high = family.high === null ? anchorHigh : Math.min(family.high, anchorHigh);
+                } else if (partial) {
+                    family.low = Math.max(family.low, previous * 0.55);
+                } else {
+                    family.low = Math.max(family.low, previous);
+                }
+
+                normalizeBounds(family);
+
+                if (family.high === null) {
+                    family.delta = clamp(previous * 1.75, previous + 2.5, 90);
+                } else {
+                    family.delta = clamp((family.low + family.high) / 2, 0.25, 90);
+                }
+
+                return estimateOf(family);
+            }
+
+            function record(result) {
+                const family = state.current;
+                const previousDelta = family.delta;
+                const hitCount = Number(result.fineHit) + Number(result.anchorHit);
+                const correct = result.fineHit && result.anchorHit;
+                const score = (result.fineHit ? 0.65 : 0) + (result.anchorHit ? 0.35 : 0);
+                const estimate = nextDelta(family, result);
+                family.records.push({
+                    round: state.round,
+                    delta: previousDelta,
+                    correct,
+                    hitCount,
+                    fineHit: result.fineHit,
+                    anchorHit: result.anchorHit,
+                    score,
+                    estimate,
+                });
+
+                const cells = grid.querySelectorAll('.cell');
+                state.answers.forEach(answer => {
+                    if (cells[answer]) cells[answer].classList.add('answer');
+                });
+
+                if (correct) {
+                    message.textContent = `${family.name}全部选对，下一次该色系会缩小差异。`;
+                } else if (result.fineHit) {
+                    message.textContent = `${family.name}选中了较细微目标，下一次会围绕精细差异继续确认。`;
+                } else if (result.anchorHit) {
+                    message.textContent = `${family.name}选中了较明显目标，下一次会在较容易范围内继续确认。`;
+                } else if (family.high === null) {
+                    message.textContent = `${family.name}暂未区分，下一次该色系会继续放大差异。`;
+                } else {
+                    message.textContent = `${family.name}本轮未区分，下一次该色系会回到更容易区分的范围。`;
+                }
+
+                setTimeout(() => {
+                    if (state.families.every(isStable)) {
+                        finish();
+                    } else {
+                        state.round += 1;
+                        render();
+                    }
+                }, 760);
+            }
+
+            function accuracy(family) {
+                if (family.records.length === 0) return 0;
+                return family.records.reduce((sum, item) => {
+                    if (typeof item.score === 'number') return sum + item.score;
+                    return sum + (item.correct ? 1 : 0);
+                }, 0) / family.records.length;
+            }
+
+            function sensitivityScore(value) {
+                if (value === null) return null;
+                return Math.round(clamp(100 - value * 3.2, 1, 99));
+            }
+
+            function letterGrade(value) {
+                const score = sensitivityScore(value);
+                if (score === null) return '--';
+                if (score >= 96) return 'A+';
+                if (score >= 92) return 'A';
+                if (score >= 88) return 'A-';
+                if (score >= 84) return 'B+';
+                if (score >= 80) return 'B';
+                if (score >= 76) return 'B-';
+                if (score >= 72) return 'C+';
+                if (score >= 68) return 'C';
+                if (score >= 64) return 'C-';
+                if (score >= 58) return 'D+';
+                if (score >= 52) return 'D';
+                if (score >= 46) return 'D-';
+                if (score >= 36) return 'E+';
+                if (score >= 24) return 'E';
+                return 'E-';
+            }
+
+            function familyGrade(value) {
+                if (value === null) {
+                    return {
+                        name: '样本不足',
+                        desc: '该色系还没有形成足够稳定的参考结果。',
+                        risk: 1,
+                    };
+                }
+                if (value <= 3) {
+                    return {
+                        name: '色彩分辨超群',
+                        desc: '能分辨非常细微的色度变化。',
+                        risk: 0,
+                    };
+                }
+                if (value <= 6) {
+                    return {
+                        name: '色彩辨识优秀',
+                        desc: '对该色系的色度变化较为敏锐。',
+                        risk: 0,
+                    };
+                }
+                if (value <= 12) {
+                    return {
+                        name: '普通范围',
+                        desc: '对该色系的辨识表现处于常见范围。',
+                        risk: 1,
+                    };
+                }
+                if (value <= 18) {
+                    return {
+                        name: '疑似色彩辨识较弱',
+                        desc: '需要更明显的色度变化才容易分辨。',
+                        risk: 2,
+                    };
+                }
+                return {
+                    name: '色觉异常风险较高',
+                    desc: '该色系需要很大的差异才容易分辨。',
+                    risk: 3,
+                };
+            }
+
+            function overallGrade(avg, weakest, spread, lowAccuracyCount) {
+                const weakValue = weakest ? weakest.estimate : avg;
+                const riskBoost = lowAccuracyCount >= 2 || spread > 12;
+
+                if (avg > 18 || weakValue > 24 || lowAccuracyCount >= 4) {
+                    return {
+                        name: '色觉异常风险较高',
+                        desc: '本次结果显示多个色系需要较大差异才容易分辨，建议更换设备和光照环境复测；如日常也常混淆颜色，可考虑专业色觉检查。',
+                        risk: 3,
+                    };
+                }
+                if (avg > 12 || weakValue > 18 || riskBoost) {
+                    return {
+                        name: '疑似色彩辨识较弱',
+                        desc: '本次测试中部分色系的辨识难度偏高，建议在相同环境下重复测试确认。',
+                        risk: 2,
+                    };
+                }
+                if (avg > 6) {
+                    return {
+                        name: '普通范围',
+                        desc: '整体色彩辨识表现处于常见范围，不同色系之间可能存在轻微差异。',
+                        risk: 1,
+                    };
+                }
+                if (avg > 3) {
+                    return {
+                        name: '色彩辨识优秀',
+                        desc: '整体能分辨较细微的色度变化，色彩观察能力较敏锐。',
+                        risk: 0,
+                    };
+                }
+                return {
+                    name: '色彩分辨超群',
+                    desc: '整体能分辨非常细微的色度变化，表现优于常见水平。',
+                    risk: 0,
+                };
+            }
+
+            function buildReport() {
+                const results = state.families.map(family => ({
+                    family,
+                    estimate: estimateOf(family),
+                    accuracy: accuracy(family),
+                    rounds: family.records.length,
+                    stable: isStable(family),
+                }));
+                const measured = results.filter(item => item.estimate !== null);
+                const avg = measured.reduce((sum, item) => sum + item.estimate, 0) / measured.length;
+                const best = measured.slice().sort((a, b) => a.estimate - b.estimate)[0];
+                const weakest = measured.slice().sort((a, b) => b.estimate - a.estimate)[0];
+                const spread = weakest.estimate - best.estimate;
+                const lowAccuracyCount = results.filter(item => item.accuracy < 0.42).length;
+                const grade = overallGrade(avg, weakest, spread, lowAccuracyCount);
+
+                reportLead.textContent = `你已完成本次色彩感知测试，共观察了 ${state.round} 组颜色。测试通过多格干扰场景估算你的色彩分辨力，每组需要找出 2 个不同色格子；等级从 A+ 到 E-，越靠前代表越能分辨细微色差。`;
+                gradeCard.innerHTML = `
+                    <div class="grade-label">综合等级</div>
+                    <div class="grade-title">${grade.name}</div>
+                    <div class="grade-desc">${grade.desc}</div>
+                `;
+
+                summaryGrid.innerHTML = '';
+                [
+                    ['综合等级', grade.name],
+                    ['综合色彩等级', letterGrade(avg)],
+                    ['最敏感', best.family.name],
+                    ['相对薄弱', weakest.family.name],
+                ].forEach(([label, value]) => {
+                    const card = document.createElement('div');
+                    card.className = 'summary-card';
+                    card.innerHTML = `<b>${value}</b><span>${label}</span>`;
+                    summaryGrid.appendChild(card);
+                });
+
+                const maxEstimate = Math.max(12, ...measured.map(item => item.estimate));
+                reportList.innerHTML = '';
+                results.forEach(item => {
+                    const value = item.estimate === null ? maxEstimate : item.estimate;
+                    const width = clamp(100 - value / maxEstimate * 82, 8, 96);
+                    const itemGrade = familyGrade(item.estimate);
+                    const row = document.createElement('div');
+                    row.className = 'report-item';
+                    row.innerHTML = `
+                        <div>
+                            <div class="report-name">${item.family.name}</div>
+                            <div class="report-sub">${item.rounds} 组 · 辨识率 ${(item.accuracy * 100).toFixed(0)}% · ${item.stable ? '结果可信' : '样本偏少'}</div>
+                        </div>
+                        <div>
+                            <div class="bar"><div class="bar-fill" style="width:${width}%"></div></div>
+                            <div class="report-sub">${itemGrade.name} · ${itemGrade.desc}</div>
+                        </div>
+                        <div class="score-value">${letterGrade(item.estimate)}</div>
+                    `;
+                    reportList.appendChild(row);
+                });
+
+                const varianceText = spread <= 3
+                    ? '你对不同色系的色度感知比较均衡。'
+                    : spread <= 7
+                        ? '你对不同色系存在一定差异，这是常见现象。'
+                        : '你对不同色系的感知差异较明显，某些颜色需要更大的色度变化才容易辨认。';
+                const bestText = `最容易分辨的是 ${best.family.name}，等级约 ${letterGrade(best.estimate)}。`;
+                const weakText = `相对最难分辨的是 ${weakest.family.name}，等级约 ${letterGrade(weakest.estimate)}。`;
+                const riskText = grade.risk >= 2
+                    ? '由于本次结果存在较高辨识难度，建议先在屏幕亮度适中、环境光稳定的条件下复测。'
+                    : '本次结果可作为个人色彩感知能力的轻量参考。';
+                analysisBox.textContent = `${varianceText}${bestText}${weakText}${riskText}`;
+                noticeBox.textContent = '说明：A+ 表示本次测试中能分辨非常细微的色差，E- 表示需要更明显的色差才容易分辨。等级由内部色差阈值换算而来。本测试属于屏幕上的娱乐/自测筛查，不是医学诊断。结果会受到屏幕色域、亮度、环境光、疲劳程度影响；如果你在日常生活中长期明显混淆颜色，建议进行专业色觉检查。';
+            }
+
+            function finish() {
+                buildReport();
+                modal.classList.add('show');
+            }
+
+            function restart() {
+                state.round = 1;
+                state.answers = [];
+                state.picks = [];
+                state.locked = false;
+                state.current = null;
+                resetFamilies();
+                modal.classList.remove('show');
+                render();
+            }
+
+            unsureBtn.addEventListener('click', () => {
+                if (state.locked) return;
+                state.locked = true;
+                record(false, 0);
+            });
+            restartBtn.addEventListener('click', restart);
+            againBtn.addEventListener('click', restart);
+
+            resetFamilies();
+            render();
+        })();
+    </script>
+    <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+        ga('create', 'UA-55383282-4', 'auto');
+        ga('send', 'pageview');
+    </script>
+</body>
+</html>
