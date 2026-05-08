@@ -83,11 +83,19 @@
             margin-top: 28px;
         }
 
+        .section-head {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 14px;
+        }
+
         .section-title {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin: 0 0 14px;
+            margin: 0;
             color: #e4e4e7;
             font-size: 15px;
             letter-spacing: 0.08em;
@@ -99,6 +107,12 @@
             border-radius: 99px;
             background: var(--accent);
             content: "";
+        }
+
+        .section-desc {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
         }
 
         .grid {
@@ -141,6 +155,66 @@
             background: linear-gradient(135deg, rgba(251, 113, 133, 0.24), rgba(96, 165, 250, 0.18));
         }
 
+        .showcase {
+            display: grid;
+            grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.8fr);
+            gap: 14px;
+        }
+
+        .showcase-card {
+            position: relative;
+            min-height: 220px;
+            overflow: hidden;
+            padding: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 32px;
+            background:
+                radial-gradient(circle at 80% 20%, rgba(52, 211, 153, 0.34), transparent 24%),
+                radial-gradient(circle at 20% 90%, rgba(96, 165, 250, 0.28), transparent 30%),
+                linear-gradient(135deg, rgba(251, 113, 133, 0.28), rgba(255, 255, 255, 0.08));
+            box-shadow: 0 26px 80px rgba(0, 0, 0, 0.34);
+            backdrop-filter: blur(20px);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .showcase-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.34);
+        }
+
+        .showcase-card b {
+            display: block;
+            max-width: 520px;
+            margin-bottom: 12px;
+            font-size: clamp(30px, 5vw, 54px);
+            line-height: 1;
+            letter-spacing: -0.06em;
+        }
+
+        .showcase-card span {
+            display: block;
+            max-width: 480px;
+            color: rgba(248, 250, 252, 0.78);
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .showcase-tag {
+            display: inline-flex;
+            margin-bottom: 22px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 999px;
+            color: rgba(248, 250, 252, 0.82);
+            background: rgba(0, 0, 0, 0.18);
+            font-size: 13px;
+        }
+
+        .mini-stack {
+            display: grid;
+            gap: 14px;
+        }
+
         .links {
             display: flex;
             flex-wrap: wrap;
@@ -180,7 +254,15 @@
                 padding-top: 44px;
             }
 
+            .section-head {
+                display: grid;
+            }
+
             .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .showcase {
                 grid-template-columns: 1fr;
             }
 
@@ -206,7 +288,34 @@
         </section>
 
         <section class="section">
-            <h2 class="section-title">小游戏与工具</h2>
+            <div class="section-head">
+                <h2 class="section-title">新鲜上架</h2>
+                <p class="section-desc">最近填好的坑，先放到最显眼的位置。</p>
+            </div>
+            <div class="showcase">
+                <a class="showcase-card" href="/games/three-music-player/index.html">
+                    <span class="showcase-tag">Three.js Music Player</span>
+                    <b>Three 音乐播放器</b>
+                    <span>带 3D 视觉效果的网页音乐播放器，适合边听歌边看点会动的东西。</span>
+                </a>
+                <div class="mini-stack">
+                    <a class="card" href="/games/color-vision-test/index.html">
+                        <b>色觉筛查实验室</b>
+                        <span>伪同色图版风格的互动筛查小游戏。</span>
+                    </a>
+                    <a class="card" href="/mma-substrate.html">
+                        <b>终末地刷基质计算器</b>
+                        <span>终末地相关的小工具。</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">小游戏</h2>
+                <p class="section-desc">颜色、逻辑、数字和注意力训练。</p>
+            </div>
             <div class="grid">
                 <a class="card feature" href="/games/color-vision-test/index.html">
                     <b>色觉筛查实验室</b>
@@ -236,13 +345,22 @@
                     <b>舒尔特方格</b>
                     <span>注意力与视觉搜索训练。</span>
                 </a>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">工具与实验</h2>
+                <p class="section-desc">不一定是游戏，但也挺好点开看看的东西。</p>
+            </div>
+            <div class="grid">
                 <a class="card" href="/mma-substrate.html">
                     <b>终末地刷基质计算器</b>
                     <span>终末地相关的小工具。</span>
                 </a>
-                <a class="card" href="/three-music-player/index.html">
-                    <b>Three音乐播放器</b>
-                    <span>基于Three.js的音乐播放器。</span>
+                <a class="card feature" href="/games/three-music-player/index.html">
+                    <b>Three 音乐播放器</b>
+                    <span>基于 Three.js 的音乐播放器，加入 3D 可视化效果。</span>
                 </a>
             </div>
         </section>
