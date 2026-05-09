@@ -13,6 +13,21 @@ let state = {
   sampledDaily: [],     /* random subset for daily mode */
 };
 
+const DAILY_FACTION_BIAS = {
+  RHODES: 0.034,
+  REUNION: -0.021,
+  RHINE: -0.091,
+  PENGUIN: 0.018,
+  GLASGOW: -0.062,
+  VICTORIA: -0.030,
+  KJERAG: -0.104,
+  LUNGMEN: -0.104,
+  URSUS: -0.085,
+  KAZDEL: 0.005,
+  SIRACUSA: 0.079,
+  LATERANO: -0.082,
+};
+
 function initState() {
   state.qIndex = 0;
   state.scores = {};
@@ -177,6 +192,23 @@ function euclidean(factionProfile) {
   return Math.sqrt(sum);
 }
 
+function factionDistance(faction) {
+  if (faction.hidden) return Infinity;
+  if (state.mode !== 'daily') return euclidean(faction.profile);
+
+  let sum = 0;
+  let count = 0;
+  DIMS.forEach(d => {
+    const fv = faction.profile[d.id] !== undefined ? faction.profile[d.id] : 0;
+    if (fv === 0) return;
+    const uv = normalizeDim(d.id);
+    sum += (uv - fv) ** 2;
+    count++;
+  });
+
+  return Math.sqrt(sum / (count || 1)) + (DAILY_FACTION_BIAS[faction.code] || 0);
+}
+
 function calcResult() {
   /* Update loading text by mode */
   const loadingP = document.querySelector('#loading-screen p');
@@ -187,7 +219,7 @@ function calcResult() {
   setTimeout(() => {
     let best = null, bestDist = Infinity;
     FACTIONS.forEach(f => {
-      const d = euclidean(f.profile);
+      const d = factionDistance(f);
       if (d < bestDist) { bestDist = d; best = f; }
     });
     renderResult(best);

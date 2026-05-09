@@ -413,7 +413,7 @@ const FACTIONS = [
     operators: [
       { name: '阿米娅', charId: 'char_002_amiya' },
       { name: '凯尔希', charId: 'char_003_kalts' },
-      { name: '德克萨斯', charId: 'char_102_texas' },
+      { name: '杜宾', charId: 'char_130_doberm' },
     ],
     profile: { C1:0, C2:0, C3:-1, Em1:1, Em2:0, Em3:1, At1:0, At2:1, At3:1, Ac1:0, Ac2:-1, Ac3:1, So1:1, So2:0, So3:0 },
   },
@@ -428,8 +428,7 @@ const FACTIONS = [
     desc: '你不接受这个世界的不公平，也不愿意用"渐进改变"来安慰自己。感染者的处境激怒了你，你愿意为他们做任何事——哪怕需要打破规则，哪怕手段会让人不舒服。你有时候会走得太远，但你内心的愤怒是真实的，那份对平等的渴望也是真实的。',
     logoFile: 'logo_followers.png',
     operators: [
-      { name: '史尔特尔', charId: 'char_350_surtr' },
-      { name: '伊芙利特', charId: 'char_134_ifrit' },
+      { name: 'W', charId: 'char_113_cqbw' },
     ],
     profile: { C1:1, C2:1, C3:1, Em1:1, Em2:-1, Em3:1, At1:-1, At2:1, At3:1, Ac1:1, Ac2:1, Ac3:1, So1:0, So2:-1, So3:-1 },
   },
@@ -444,9 +443,8 @@ const FACTIONS = [
     desc: '你用数据和逻辑看待世界，对感情色彩的决策天然保持警惕。你相信科技能解决矿石病，相信有效率的体系比感情用事更能帮助人。你在意结果而非过程，在意能力而非立场。有时候这让你显得冷酷，但你知道情绪化只会让事情更糟。',
     logoFile: 'logo_rhine.png',
     operators: [
-      { name: '斯卡蒂', charId: 'char_263_skadi' },
-      { name: '华法琳', charId: 'char_171_bldsk' },
-      { name: '安洁莉娜', charId: 'char_291_aglina' },
+      { name: '赫默', charId: 'char_108_silent' },
+      { name: '伊芙利特', charId: 'char_134_ifrit' },
     ],
     profile: { C1:-1, C2:0, C3:1, Em1:-1, Em2:1, Em3:0, At1:1, At2:-1, At3:-1, Ac1:0, Ac2:1, Ac3:1, So1:-1, So2:1, So3:1 },
   },
@@ -462,7 +460,8 @@ const FACTIONS = [
     logoFile: 'logo_penguin.png',
     operators: [
       { name: '能天使', charId: 'char_103_angel' },
-      { name: '陈', charId: 'char_010_chen' },
+      { name: '德克萨斯', charId: 'char_102_texas' },
+      { name: '空', charId: 'char_101_sora' },
     ],
     profile: { C1:1, C2:1, C3:-1, Em1:0, Em2:0, Em3:1, At1:-1, At2:0, At3:0, Ac1:1, Ac2:0, Ac3:0, So1:1, So2:-1, So3:-1 },
   },
@@ -493,8 +492,7 @@ const FACTIONS = [
     desc: '你深信传统与秩序的价值，认为荣誉是比生命更重要的东西。你愿意为保护你所认同的体制承担巨大代价，但你也开始意识到这个体制内部有着深刻的矛盾与腐败。你不是不知道，你只是选择用自己的方式，从内部去修正它。',
     logoFile: 'logo_victoria.png',
     operators: [
-      { name: '诗怀雅', charId: 'char_308_swire' },
-      { name: '幽灵鲨', charId: 'char_143_ghost' },
+      { name: '推进之王', charId: 'char_112_siege' },
     ],
     profile: { C1:0, C2:-1, C3:0, Em1:0, Em2:1, Em3:0, At1:1, At2:0, At3:0, Ac1:0, Ac2:-1, Ac3:1, So1:0, So2:1, So3:1 },
   },
@@ -509,8 +507,8 @@ const FACTIONS = [
     desc: '你珍视那些经受了时间考验的传统，认为仓促的改变往往带来更大的破坏。你倾向于守护、维持、保存，而不是激进变革。这不代表你固执，而是你相信稳定的基础才能支撑真正的进步。你对外部世界保持距离，但并非漠不关心。',
     logoFile: 'logo_kjerag.png',
     operators: [
-      { name: '极境', charId: 'char_401_elysm' },
-      { name: '赫默', charId: 'char_108_silent' },
+      { name: '银灰', charId: 'char_172_svrash' },
+      { name: '初雪', charId: 'char_174_slbell' },
     ],
     profile: { C1:-1, C2:-1, C3:0, Em1:0, Em2:1, Em3:0, At1:1, At2:0, At3:-1, Ac1:-1, Ac2:-1, Ac3:1, So1:-1, So2:1, So3:1 },
   },
@@ -526,8 +524,8 @@ const FACTIONS = [
     logoFile: 'logo_lgd.png',
     operators: [
       { name: '陈', charId: 'char_010_chen' },
-      { name: '推进之王', charId: 'char_112_siege' },
       { name: '星熊', charId: 'char_136_hsguma' },
+      { name: '诗怀雅', charId: 'char_308_swire' },
     ],
     profile: { C1:-1, C2:-1, C3:0, Em1:-1, Em2:1, Em3:0, At1:1, At2:-1, At3:-1, Ac1:0, Ac2:-1, Ac3:1, So1:0, So2:1, So3:1 },
   },
@@ -544,6 +542,7 @@ const FACTIONS = [
     operators: [
       { name: '凛冬', charId: 'char_115_headbr' },
       { name: '真理', charId: 'char_195_glassb' },
+      { name: '早露', charId: 'char_197_poca' },
     ],
     profile: { C1:0, C2:0, C3:1, Em1:-1, Em2:1, Em3:-1, At1:1, At2:-1, At3:-1, Ac1:0, Ac2:1, Ac3:1, So1:-1, So2:1, So3:1 },
   },
@@ -559,7 +558,7 @@ const FACTIONS = [
     logoFile: 'logo_kazdel.png',
     operators: [
       { name: 'W', charId: 'char_113_cqbw' },
-      { name: '凯尔希', charId: 'char_003_kalts' },
+      { name: '史尔特尔', charId: 'char_350_surtr' },
     ],
     profile: { C1:0, C2:1, C3:1, Em1:0, Em2:1, Em3:-1, At1:-1, At2:0, At3:1, Ac1:0, Ac2:1, Ac3:1, So1:-1, So2:-1, So3:1 },
   },
@@ -591,7 +590,7 @@ const FACTIONS = [
     logoFile: 'logo_Laterano.png',
     operators: [
       { name: '能天使', charId: 'char_103_angel' },
-      { name: '卡达', charId: 'char_328_cammou' },
+      { name: '送葬人', charId: 'char_279_excu' },
     ],
     profile: { C1:-1, C2:-1, C3:0, Em1:0, Em2:1, Em3:0, At1:1, At2:0, At3:0, Ac1:-1, Ac2:-1, Ac3:1, So1:0, So2:1, So3:1 },
   },
@@ -606,9 +605,7 @@ const FACTIONS = [
     traits: ['神秘主义', '原始法则', '超然物外', '远古智慧', '局外人视角'],
     desc: '你不属于泰拉的任何势力，或者说，你从一个更古老的维度来审视这一切。你对文明和政治的热闹既不鄙视也不沉迷，你知道这些争夺背后有更本质的东西被遗忘了。你是局外人，也是见证者，而你的智慧来自于那片大多数人从未踏足过的土地。',
     logoFile: 'logo_sami.png',
-    operators: [
-      { name: '流明', charId: 'char_4042_lumen' },
-    ],
+    operators: [],
     profile: { C1:0, C2:0, C3:0, Em1:0, Em2:0, Em3:0, At1:0, At2:0, At3:0, Ac1:0, Ac2:0, Ac3:0, So1:0, So2:0, So3:0 },
     hidden: true,
   },
