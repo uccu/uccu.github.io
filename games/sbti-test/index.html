@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SBTI 人格测试</title>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --surface2: #1f1f1f;
+      --border: #2a2a2a;
+      --text: #f0f0f0;
+      --muted: #888;
+      --accent: #a78bfa;
+      --accent2: #60a5fa;
+      --accent3: #34d399;
+      --accent4: #f87171;
+      --accent5: #fbbf24;
+      --radius: 16px;
+      --card-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    #app {
+      width: 100%;
+      max-width: 640px;
+    }
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── INTRO ── */
+    .hero-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 36px;
+      box-shadow: var(--card-shadow);
+      text-align: center;
+    }
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .hero-card h1 {
+      font-size: clamp(2rem, 8vw, 3rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+    .hero-card .lead {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .meta-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 8px;
+    }
+    .meta-item b { display: block; font-size: 18px; color: var(--accent); }
+    .meta-item span { font-size: 11px; color: var(--muted); margin-top: 4px; display: block; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-block;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 700;
+      transition: all .15s;
+      padding: 14px 28px;
+    }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      width: 100%;
+    }
+    .btn.primary:hover { opacity: .88; transform: translateY(-1px); }
+    .btn.primary:active { transform: translateY(0); }
+
+    /* ── TEST SCREEN ── */
+    .test-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      box-shadow: var(--card-shadow);
+    }
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .hud-item { text-align: center; }
+    .hud-item b { display: block; font-size: 18px; color: var(--text); }
+    .hud-item span { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+    .progress-wrap {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    #progressBar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 2px;
+      transition: width .4s ease;
+    }
+    .q-number {
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .q-text {
+      font-size: clamp(15px, 4vw, 18px);
+      font-weight: 600;
+      line-height: 1.5;
+      margin-bottom: 24px;
+      min-height: 60px;
+    }
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .opt-btn {
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 14px 18px;
+      text-align: left;
+      transition: all .15s;
+      line-height: 1.4;
+    }
+    .opt-btn:hover {
+      border-color: var(--accent);
+      background: rgba(167,139,250,.08);
+    }
+    .opt-btn.selected {
+      border-color: var(--accent);
+      background: rgba(167,139,250,.15);
+      color: var(--accent);
+    }
+    .opt-btn.correct {
+      border-color: var(--accent3);
+      background: rgba(52,211,153,.1);
+      color: var(--accent3);
+    }
+    .scale-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .scale-row {
+      display: flex;
+      gap: 8px;
+    }
+    .scale-btn {
+      flex: 1;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 12px 4px;
+      text-align: center;
+      transition: all .15s;
+    }
+    .scale-btn:hover { border-color: var(--accent); color: var(--text); }
+    .scale-btn.selected {
+      border-color: var(--accent);
+      background: rgba(167,139,250,.15);
+      color: var(--accent);
+    }
+
+    /* ── RESULT ── */
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      box-shadow: var(--card-shadow);
+      text-align: center;
+    }
+    .type-badge {
+      display: inline-block;
+      font-size: clamp(2.5rem, 12vw, 4.5rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin: 12px 0;
+    }
+    .type-name {
+      font-size: 15px;
+      color: var(--accent2);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .type-tagline {
+      font-size: 14px;
+      color: var(--muted);
+      font-style: italic;
+      margin-bottom: 24px;
+    }
+    .type-desc {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #ccc;
+      text-align: left;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 24px;
+    }
+    .dim-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    .dim-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .dim-item .dim-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 4px;
+    }
+    .dim-bar-wrap {
+      height: 5px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .dim-bar {
+      height: 100%;
+      border-radius: 3px;
+    }
+    .dim-value {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .share-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .btn.ghost {
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+    }
+    .btn.ghost:hover { border-color: var(--accent); }
+
+    /* ── LOADING ANIM ── */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .loading-dots span {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin: 0 3px;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    .loading-dots span:nth-child(2) { animation-delay: .2s; }
+    .loading-dots span:nth-child(3) { animation-delay: .4s; }
+    #loading-screen { text-align: center; padding: 80px 20px; }
+    #loading-screen p { color: var(--muted); margin-top: 20px; font-size: 14px; }
+
+    @media (max-width: 400px) {
+      .meta-grid { grid-template-columns: 1fr 1fr; }
+      .dim-grid { grid-template-columns: 1fr; }
+      .hero-card { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- INTRO -->
+  <section id="intro-screen" class="screen active">
+    <div class="hero-card">
+      <p class="eyebrow">Silly Big Type Indicator</p>
+      <h1>SBTI</h1>
+      <p class="lead">15 个心理维度 · 27 种人格类型 · 30 道题目<br>用网络黑话照见真实的你</p>
+      <div class="meta-grid">
+        <div class="meta-item"><b>30</b><span>道题目</span></div>
+        <div class="meta-item"><b>15</b><span>个维度</span></div>
+        <div class="meta-item"><b>27+</b><span>种类型</span></div>
+      </div>
+      <button class="btn primary" id="startBtn">开始测试</button>
+    </div>
+  </section>
+
+  <!-- LOADING -->
+  <section id="loading-screen" class="screen">
+    <div class="loading-dots"><span></span><span></span><span></span></div>
+    <p>正在分析你的人格画像…</p>
+  </section>
+
+  <!-- TEST -->
+  <section id="test-screen" class="screen">
+    <div class="test-panel">
+      <div class="hud">
+        <div class="hud-item"><b id="qNumText">1</b><span>/ 30</span></div>
+        <div class="hud-item"><b id="modelText">自我模型</b><span>模块</span></div>
+        <div class="hud-item"><b id="dimText">S1</b><span>维度</span></div>
+      </div>
+      <div class="progress-wrap"><div id="progressBar" style="width:0%"></div></div>
+      <p class="q-number" id="qLabel">Q1</p>
+      <p class="q-text" id="qText"></p>
+      <div id="qBody"></div>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result-screen" class="screen">
+    <div class="result-card">
+      <p class="eyebrow">你的 SBTI 类型</p>
+      <div class="type-badge" id="resultType"></div>
+      <p class="type-name" id="resultName"></p>
+      <p class="type-tagline" id="resultTagline"></p>
+      <div class="type-desc" id="resultDesc"></div>
+      <div class="dim-grid" id="dimGrid"></div>
+      <div class="share-row">
+        <button class="btn ghost" id="retestBtn">重新测试</button>
+        <button class="btn primary" id="shareBtn">复制结果</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-55383282-4', 'auto');
+    ga('send', 'pageview');
+</script>
+</body>
+</html>
