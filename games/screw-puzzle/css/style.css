@@ -1,0 +1,555 @@
+/* ============================================================
+   拧螺丝物理小游戏 - 全部样式
+   分组：1) base 2) layout 3) stage 4) toast
+         5) toolbox 6) modal & flying assets 7) hint
+         8) animations 9) media queries
+   ============================================================ */
+
+/* 1) base ------------------------------------------------------ */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  height: 100vh;
+  /* 手机浏览器地址栏会动态收缩 viewport，dvh 给出真实可视高度，避免页面底部被裁。 */
+  height: 100dvh;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #f8fafc;
+  background: radial-gradient(circle at 20% 0, #334155, #0f172a 48%, #020617);
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+/* 2) layout ---------------------------------------------------- */
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  height: 100dvh;
+  gap: 12px;
+  padding: 14px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 22px;
+  background: rgba(15, 23, 42, .82);
+  border: 1px solid rgba(148, 163, 184, .24);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, .28);
+}
+.topbar h1 { margin: 0 0 4px; font-size: clamp(22px, 3vw, 34px); }
+.topbar p  { margin: 0; color: #cbd5e1; }
+
+.stats {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.stats span,
+.stats button {
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: #1e293b;
+  color: #e2e8f0;
+}
+.stats button {
+  font-weight: 800;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  color: white;
+}
+.stats .hint-btn {
+  background: linear-gradient(135deg, #22c55e, #0ea5e9);
+}
+
+.level-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 !important;
+  background: transparent !important;
+}
+.level-nav button {
+  padding: 6px 12px;
+  font-size: 18px;
+  line-height: 1;
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: 8px;
+}
+.level-nav button:hover { background: #334155; }
+.level-nav .level-label {
+  padding: 9px 12px;
+  background: #1e293b;
+  border-radius: 8px;
+  margin: 0 6px;
+}
+
+/* 3) stage ----------------------------------------------------- */
+.stage-wrap { min-height: 0; }
+
+.stage {
+  position: relative;
+  width: min(100%, 980px);
+  height: 100%;
+  min-height: 400px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(148, 163, 184, .22);
+  background:
+    linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px),
+    radial-gradient(circle at 50% 0, #1e3a8a, #0f172a 62%);
+  background-size: 34px 34px, 34px 34px, auto;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, .04),
+    0 22px 70px rgba(0, 0, 0, .28);
+}
+.stage canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 4) toast ----------------------------------------------------- */
+.toast {
+  position: absolute;
+  z-index: 4;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-12px);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .9);
+  color: #f8fafc;
+  opacity: 0;
+  transition: .22s;
+  pointer-events: none;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 5) toolbox panel -------------------------------------------- */
+.toolbox-panel {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  padding: 12px 14px;
+  border-radius: 24px;
+  background: rgba(15, 23, 42, .86);
+  border: 1px solid rgba(148, 163, 184, .24);
+}
+.toolbox-title {
+  margin-bottom: 10px;
+  color: #cbd5e1;
+  font-weight: 800;
+}
+.toolboxes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.toolbox {
+  position: relative;
+  min-height: 104px;
+  padding: 10px;
+  border-radius: 20px;
+  border: 2px solid transparent;
+  background: #1e293b;
+  overflow: hidden;
+  transition: .2s;
+}
+.toolbox.red    { border-color: #ef4444; }
+.toolbox.blue   { border-color: #3b82f6; }
+.toolbox.yellow { border-color: #f59e0b; }
+.toolbox.green  { border-color: #22c55e; }
+.toolbox.accept     { box-shadow: 0 0 0 4px rgba(255, 255, 255, .14); }
+.toolbox.delivering { transform: scale(.8) translateX(80px); opacity: 0; }
+
+.toolbox-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+.toolbox-color {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--box-color);
+}
+.toolbox-label { font-size: 14px; color: #e2e8f0; }
+.toolbox-count {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+  margin-top: 6px;
+}
+
+.progress-bar {
+  display: flex;
+  gap: 4px;
+  height: 24px;
+  margin-top: 4px;
+}
+.progress-segment {
+  flex: 1;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .12);
+  transition: background .2s;
+}
+.progress-segment.filled {
+  box-shadow: inset 0 0 4px rgba(255, 255, 255, .3);
+}
+
+/* locked toolbox ------------------------------- */
+.toolbox.locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  border-color: rgba(148, 163, 184, .4) !important;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(148, 163, 184, .06),
+    rgba(148, 163, 184, .06) 8px,
+    rgba(148, 163, 184, .12) 8px,
+    rgba(148, 163, 184, .12) 16px
+  );
+}
+.toolbox.locked:hover {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(250, 204, 21, .1),
+    rgba(250, 204, 21, .1) 8px,
+    rgba(250, 204, 21, .18) 8px,
+    rgba(250, 204, 21, .18) 16px
+  );
+  border-color: #facc15 !important;
+  transform: scale(1.02);
+}
+.toolbox.locked .lock-icon {
+  font-size: 22px;
+  filter: grayscale(.4);
+}
+.toolbox.locked .unlock-btn {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #78350f;
+  font-size: 12px;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+/* slots / mini screws (legacy slot UI helpers) */
+.slots {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.slot {
+  flex: 1;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .16);
+  display: grid;
+  place-items: center;
+}
+.mini-screw {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid white;
+  background: var(--box-color);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, .25);
+}
+
+/* 6) modal & flying assets ------------------------------------ */
+.modal {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, .58);
+  backdrop-filter: blur(6px);
+}
+.modal.hidden { display: none; }
+
+.modal-card {
+  width: min(88%, 360px);
+  padding: 26px;
+  border-radius: 26px;
+  text-align: center;
+  background: #f8fafc;
+  color: #0f172a;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .36);
+}
+.modal-card h2 { margin: 0 0 8px; font-size: 32px; }
+.modal-card p  { margin: 0 0 18px; color: #475569; }
+.modal-card button {
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: white;
+  font-weight: 900;
+}
+
+.screw-fly {
+  position: fixed;
+  z-index: 20;
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, .35),
+    inset 0 0 0 3px rgba(15, 23, 42, .35);
+  pointer-events: none;
+  transition:
+    transform .48s cubic-bezier(.2, .9, .25, 1),
+    opacity .48s ease;
+}
+
+/* 7) hint ----------------------------------------------------- */
+.hint-ring {
+  position: fixed;
+  z-index: 18;
+  width: 58px;
+  height: 58px;
+  margin: -29px 0 0 -29px;
+  border: 3px solid #facc15;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 0 rgba(250, 204, 21, .55),
+    0 0 24px rgba(250, 204, 21, .65);
+  animation: hintPulse 1.05s ease-out infinite;
+}
+
+.screen-burst {
+  position: fixed;
+  z-index: 19;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(.7);
+}
+.screen-burst.show {
+  opacity: 1;
+  transform: scale(1);
+  transition: transform .18s ease, opacity .18s ease;
+}
+.screen-burst span {
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--burst-color, #f8fafc);
+  box-shadow: 0 0 12px var(--burst-color, #f8fafc);
+  animation: burstDot .58s cubic-bezier(.2, .8, .2, 1) forwards;
+}
+
+.toolbox.full-pop {
+  animation: toolboxFullPop .36s cubic-bezier(.2, 1.4, .3, 1);
+}
+
+/* 8) animations ----------------------------------------------- */
+@keyframes hintPulse {
+  0% {
+    transform: scale(.76);
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, .55);
+  }
+  100% {
+    transform: scale(1.32);
+    opacity: .18;
+    box-shadow: 0 0 0 18px rgba(250, 204, 21, 0);
+  }
+}
+
+@keyframes burstDot {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(.15); opacity: 0; }
+}
+
+@keyframes toolboxFullPop {
+  0%   { transform: scale(1); }
+  45%  {
+    transform: scale(1.08);
+    box-shadow:
+      0 0 0 5px rgba(250, 204, 21, .22),
+      0 0 28px rgba(250, 204, 21, .35);
+  }
+  100% { transform: scale(1); }
+}
+
+/* 9) media queries -------------------------------------------- */
+
+/* 手机竖屏：把所有外围 UI 紧凑化，给 stage 留出最大空间。
+   关键：.stage 必须移除 min-height: 400px，否则会撑出 grid 1fr 单元，
+   导致下半部分落在 toolbox-panel 之后甚至 viewport 之外（用户报告"板子在主屏幕下方看不到"）。 */
+@media (max-width: 720px) {
+  .app {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .topbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 16px;
+  }
+  .topbar h1 { font-size: 18px; margin: 0; }
+  .topbar p  { display: none; }
+
+  .stats {
+    gap: 6px;
+    justify-content: flex-start;
+  }
+  .stats span,
+  .stats button {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  .level-nav button   { padding: 4px 9px; font-size: 16px; }
+  .level-nav .level-label { padding: 6px 10px; font-size: 13px; }
+
+  .stage-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .stage {
+    min-height: 0;
+    border-radius: 18px;
+  }
+
+  .toolbox-panel {
+    padding: 8px 10px;
+    border-radius: 18px;
+  }
+  .toolbox-title { margin-bottom: 6px; font-size: 13px; }
+  .toolboxes     { gap: 8px; }
+  .toolbox       { min-height: 78px; padding: 8px; border-radius: 14px; }
+  .toolbox-head  { gap: 6px; margin-bottom: 6px; }
+  .toolbox-label { font-size: 12px; }
+  .toolbox-count { font-size: 11px; margin-top: 4px; }
+  .progress-bar  { height: 18px; }
+  .slot          { height: 34px; }
+}
+
+/* 手机横屏：把原来的上下两块 UI 放到右侧，让舞台吃满左侧高度。
+   这样 430×932 横屏（932×430）不再被 topbar/toolbox 挤压成矮条。 */
+@media (max-height: 520px) and (orientation: landscape) {
+  .app {
+    grid-template-columns: minmax(0, 1fr) clamp(200px, 28vw, 260px);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .stage-wrap {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .stage {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border-radius: 18px;
+  }
+
+  .topbar {
+    grid-column: 2;
+    grid-row: 1;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 18px;
+  }
+  .topbar h1 { font-size: 16px; margin: 0; }
+  .topbar p  { display: none; }
+
+  .stats {
+    gap: 6px;
+    justify-content: flex-start;
+  }
+  .stats span,
+  .stats button {
+    padding: 6px 9px;
+    font-size: 12px;
+  }
+  .level-nav button { padding: 4px 8px; font-size: 15px; }
+  .level-nav .level-label { padding: 6px 8px; margin: 0 4px; font-size: 12px; }
+
+  .toolbox-panel {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 10px;
+    border-radius: 18px;
+    overflow: auto;
+  }
+  .toolbox-title { margin-bottom: 8px; font-size: 13px; }
+  .toolboxes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .toolbox {
+    min-height: 64px;
+    padding: 7px;
+    border-radius: 14px;
+  }
+  .toolbox-head { gap: 6px; margin-bottom: 6px; }
+  .toolbox-color { width: 14px; height: 14px; }
+  .toolbox-label { font-size: 12px; }
+  .toolbox-count { font-size: 11px; margin-top: 4px; }
+  .progress-bar { height: 14px; }
+}
+
+/* 极小屏（iPhone SE 等 ≤ 380）再压一次内边距，并允许工具箱挤成 2 列。 */
+@media (max-width: 380px) {
+  .app { padding: 6px; gap: 6px; }
+  .topbar h1 { font-size: 16px; }
+  .toolboxes { grid-template-columns: repeat(2, 1fr); }
+  .toolbox   { min-height: 70px; }
+}

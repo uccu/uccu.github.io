@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>拧螺丝物理小游戏</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <h1>拧螺丝物理小游戏</h1>
+        <p>点击未被遮挡、且能进入同色工具箱的螺丝。</p>
+      </div>
+      <div class="stats">
+        <span class="level-nav">
+          <button id="prevLevelBtn" title="上一关">‹</button>
+          <span class="level-label">关卡 <b id="levelLabel">1/50</b></span>
+          <button id="nextLevelBtn" title="下一关">›</button>
+        </span>
+        <span>板子 <b id="boardsLeft">0</b></span>
+        <span>螺丝 <b id="screwsLeft">0</b></span>
+        <button id="hintBtn" class="hint-btn">提示</button>
+        <button id="restartBtn">重开</button>
+      </div>
+    </header>
+    <main class="stage-wrap">
+      <div id="stage" class="stage">
+        <div id="toast" class="toast"></div>
+        <div id="modal" class="modal hidden">
+          <div class="modal-card">
+            <h2 id="modalTitle">通关</h2>
+            <p id="modalText">所有板子都已清除。</p>
+            <button id="modalBtn">再玩一次</button>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer class="toolbox-panel">
+      <div class="toolbox-title">工具箱收纳</div>
+      <div id="toolboxes" class="toolboxes"></div>
+    </footer>
+  </div>
+  <script src="vendor/three.min.js"></script>
+  <script>
+    // Rapier 2D compat ships as CommonJS. Provide a shim so the script tag
+    // can populate a global `RAPIER` without a bundler.
+    var module = { exports: {} };
+    var exports = module.exports;
+  </script>
+  <script src="vendor/rapier2d-compat.js"></script>
+  <script>
+    window.RAPIER = module.exports;
+    // shim 用完即弃，避免污染全局命名空间影响后续脚本。
+    try { delete window.module; } catch (e) { window.module = undefined; }
+    try { delete window.exports; } catch (e) { window.exports = undefined; }
+  </script>
+  <script src="js/levels.js"></script>
+  <script src="js/main.js"></script>
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-55383282-4', 'auto');
+      ga('send', 'pageview');
+  </script>
+</body>
+</html>
